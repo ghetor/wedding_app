@@ -11,3 +11,4 @@ dependencies:
   - matplotlib
   - beautifulsoup4
   - requests
+  - lxml

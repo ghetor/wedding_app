@@ -1,8 +1,7 @@
 streamlit==1.37.1
-yfinance==0.2.43
-pandas>=2.2.0
-numpy>=1.26.0
-matplotlib
-beautifulsoup4
-requests
-lxml
+pandas==2.2.2
+yfinance==0.2.40
+numpy==1.26.4
+lxml==5.3.0
+html5lib==1.1
+beautifulsoup4==4.12.3
