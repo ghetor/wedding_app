@@ -1,0 +1,13 @@
+name: wedd_app
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - streamlit=1.37.1
+  - yfinance=0.2.43
+  - pandas>=2.2.0
+  - numpy>=1.26.0
+  - matplotlib
+  - beautifulsoup4
+  - requests
