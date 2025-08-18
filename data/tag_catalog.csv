@@ -1,0 +1,34 @@
+group_key,tag_key,label_it,label_en,emoji
+tech,ai,Intelligenza artificiale,Artificial intelligence,?
+tech,chips,Chip / semiconduttori,Chips / semiconductors,?
+tech,cloud,Cloud,Cloud,??
+tech,software,Software,Software,?
+tech,consumer_electronics,Elettronica di consumo,Consumer electronics,?
+tech,robots_drones,Robot e droni,Robots & drones,?
+tech,search_ads,Ricerca & Ads,Search & Ads,?
+tech,social_media,Social,Social,?
+green,renewables,Rinnovabili,Renewables,??
+green,environment,Ambiente,Environment,?
+green,sustainability,Sostenibilità,Sustainability,??
+mobility,electric_cars,Auto elettriche,Electric cars,??
+mobility,automotive,Automotive,Automotive,?
+mobility,aerospace,Aerei & spazio,Aerospace & space,??
+mobility,travel,Viaggi,Travel,?
+fun,movies,Film,Movies,?
+fun,parks,Parchi,Parks,?
+fun,gaming,Gaming,Gaming,?
+fun,music,Musica,Music,?
+fun,streaming,Streaming,Streaming,?
+lifestyle,coffee,Caffè,Coffee,?
+lifestyle,luxury,Luxury,Luxury,?
+lifestyle,sportswear,Sport & sneakers,Sportswear & sneakers,?
+food_bev,beverages,Bevande,Beverages,?
+food_bev,snacks,Snack,Snacks,?
+food_bev,fast_food,Fast food,Fast food,?
+web_commerce,ecommerce,E-commerce,E-commerce,?
+web_commerce,logistics,Logistica,Logistics,?
+home,home_food,Cibo confezionato,Packaged foods,?
+home,home_care,Cura casa & persona,Home & personal care,?
+energy,energy,Energia,Energy,?
+industry,automation,Automazione,Automation,??
+pets,pet_care,Cura degli animali,Pet care,?

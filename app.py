@@ -4,6 +4,18 @@ import pandas as pd
 from c_wedding_app import WeddingApp, I18N
 from uuid import uuid4
 
+# ...st.set_page_config...
+
+if "selected_tags" not in st.session_state:
+    st.session_state.selected_tags = set()
+if "tag_catalog" not in st.session_state:
+    st.session_state.tag_catalog = None
+
+app = WeddingApp()
+if st.session_state.tag_catalog is None:
+    st.session_state.tag_catalog = app.load_tag_catalog()
+
+
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered", initial_sidebar_state="collapsed")
 
 # -------------------------
@@ -30,19 +42,20 @@ T = I18N[st.session_state.lang]
 # -------------------------
 # Header + Language toggle
 # -------------------------
-colA, colB = st.columns([1,1])
+colA, colB = st.columns([6,1])
 with colA:
     st.title(T["app_title"])
 with colB:
-    st.selectbox(
-        T["lang_label"], 
-        options=[("it","🇮🇹 Italiano"), ("en","🇬🇧 English")],
+    lang_choice = st.radio(
+        "",
+        options=["it","en"],
         index=0 if st.session_state.lang=="it" else 1,
-        format_func=lambda x: x[1],
-        key="lang_select",
+        format_func=lambda x: "🇮🇹" if x=="it" else "🇬🇧",
+        horizontal=True,
+        label_visibility="collapsed"
     )
-    if st.session_state.lang_select[0] != st.session_state.lang:
-        st.session_state.lang = st.session_state.lang_select[0]
+    if lang_choice != st.session_state.lang:
+        st.session_state.lang = lang_choice
         T = I18N[st.session_state.lang]
 
 st.divider()
@@ -68,39 +81,54 @@ if st.session_state.step == 0:
     st.button(T["start_quiz"], type="primary", on_click=lambda: goto(1))
 
 # -------------------------
-# Step 1 – Profiling Quiz
+# Step 1 – Selezione temi (tag)
 # -------------------------
 if st.session_state.step == 1:
-    st.header(T["profile_title"])
-    q1 = st.radio(T["q1"], options=I18N[st.session_state.lang]["q1_opts"], key="q1")
-    q2 = st.radio(T["q2"], options=I18N[st.session_state.lang]["q2_opts"], key="q2")
-    q3 = st.radio(T["q3"], options=I18N[st.session_state.lang]["q3_opts"], key="q3")
+    st.header(I18N[st.session_state.lang]["profile_title"])
+    st.caption(I18N[st.session_state.lang]["tags_title"])
 
-    st.session_state.answers = {"q1": q1, "q2": q2, "q3": q3}
-    st.button(T["to_suggestions"], type="primary", on_click=lambda: goto(2))
+    tags = st.session_state.tag_catalog
+    if tags is None or tags.empty:
+        st.error("Manca data/tag_catalog.csv")
+    else:
+        # Render per gruppi
+        selected = set(st.session_state.selected_tags)
+        lang = st.session_state.lang
+        for grp, dfgrp in tags.groupby("group_key"):
+            label_group = grp.capitalize()
+            with st.expander(f"{label_group}"):
+                for _, r in dfgrp.iterrows():
+                    label = (r["label_it"] if lang=="it" else r["label_en"])
+                    emoji = str(r.get("emoji","") or "")
+                    key = r["tag_key"]
+                    ck = st.checkbox(f"{emoji} {label}".strip(), value=(key in selected), key=f"tag_{key}")
+                    if ck:
+                        selected.add(key)
+                    else:
+                        selected.discard(key)
+        st.session_state.selected_tags = selected
+        st.button(I18N[st.session_state.lang]["to_suggestions"], type="primary", on_click=lambda: goto(2))
+
 
 # -------------------------
-# Step 2 – Suggestions & Pick
+# Step 2 – Aziende filtrate per tag
 # -------------------------
 if st.session_state.step == 2:
-    st.header(T["suggestions_title"])
-    st.caption(T["suggestions_sub"])
+    st.header(I18N[st.session_state.lang]["suggestions_title"])
+    st.caption(I18N[st.session_state.lang]["suggestions_sub"])
 
-    # Build suggested list
-    if st.session_state.suggested.empty:
-        st.session_state.suggested = app.suggestions(st.session_state.answers, k=12)
+    df_all = app.filter_universe_by_tag_keys(st.session_state.selected_tags)
 
-    # Search box
-    q = st.text_input(T["search_placeholder"])
-    df = st.session_state.suggested
+    q = st.text_input(I18N[st.session_state.lang]["search_placeholder"])
+    df = df_all
     if q:
         mask = df["name"].str.contains(q, case=False, na=False)
         df = df[mask]
 
-    # Checkbox grid
     picked = set(st.session_state.picked)
     for _, row in df.iterrows():
-        label = f"{row['name']} {row['emoji']} ({row['ticker']})"
+        tags_str = app.display_tags(row, lang=st.session_state.lang)
+        label = f"{row['name']} {row.get('emoji','')} ({row['ticker']}) — {tags_str}"
         ck = st.checkbox(label, value=(row['name'] in picked), key=f"pick_{row['ticker']}")
         if ck:
             picked.add(row['name'])
@@ -110,9 +138,10 @@ if st.session_state.step == 2:
 
     cols = st.columns(2)
     with cols[0]:
-        st.button(T["back"], on_click=lambda: goto(1))
+        st.button(I18N[st.session_state.lang]["back"], on_click=lambda: goto(1))
     with cols[1]:
-        st.button(T["to_amounts"], type="primary", on_click=lambda: goto(3), disabled=len(st.session_state.picked)==0)
+        st.button(I18N[st.session_state.lang]["to_amounts"], type="primary", on_click=lambda: goto(3), disabled=len(st.session_state.picked)==0)
+
 
 # -------------------------
 # Step 3 – Amounts & Total

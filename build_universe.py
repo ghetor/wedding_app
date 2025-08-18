@@ -1,0 +1,56 @@
+import pandas as pd
+
+stocks = [
+    # --- USA Tech ---
+    ("AAPL", "Apple Inc.", "Technology", "Tecnologia", "USA", "USA Tech", ["tech","growth","usa"]),
+    ("MSFT", "Microsoft Corp.", "Technology", "Tecnologia", "USA", "USA Tech", ["tech","cloud","growth"]),
+    ("GOOGL", "Alphabet Inc.", "Technology", "Tecnologia", "USA", "USA Tech", ["tech","search","advertising"]),
+    ("AMZN", "Amazon.com Inc.", "Consumer Discretionary", "Consumi Discrezionali", "USA", "USA Tech", ["ecommerce","cloud","growth"]),
+    ("META", "Meta Platforms Inc.", "Technology", "Tecnologia", "USA", "USA Tech", ["social","advertising","vr"]),
+    ("NVDA", "NVIDIA Corp.", "Technology", "Tecnologia", "USA", "USA Tech", ["semiconductors","ai","growth"]),
+    ("TSLA", "Tesla Inc.", "Consumer Discretionary", "Consumi Discrezionali", "USA", "USA Tech", ["ev","tech","growth"]),
+    ("NFLX", "Netflix Inc.", "Communication Services", "Comunicazioni", "USA", "USA Tech", ["streaming","media"]),
+    ("ADBE", "Adobe Inc.", "Technology", "Tecnologia", "USA", "USA Tech", ["software","creative","cloud"]),
+    ("CRM", "Salesforce Inc.", "Technology", "Tecnologia", "USA", "USA Tech", ["crm","cloud","software"]),
+
+    # --- USA Healthcare ---
+    ("JNJ", "Johnson & Johnson", "Healthcare", "Sanità", "USA", "USA Healthcare", ["healthcare","pharma"]),
+    ("PFE", "Pfizer Inc.", "Healthcare", "Sanità", "USA", "USA Healthcare", ["healthcare","pharma","covid"]),
+    ("MRK", "Merck & Co. Inc.", "Healthcare", "Sanità", "USA", "USA Healthcare", ["healthcare","pharma"]),
+    ("UNH", "UnitedHealth Group", "Healthcare", "Sanità", "USA", "USA Healthcare", ["healthcare","insurance"]),
+    ("ABBV", "AbbVie Inc.", "Healthcare", "Sanità", "USA", "USA Healthcare", ["biotech","pharma"]),
+
+    # --- USA Financials ---
+    ("JPM", "JP Morgan Chase", "Financials", "Finanza", "USA", "USA Financials", ["bank","financials"]),
+    ("BAC", "Bank of America", "Financials", "Finanza", "USA", "USA Financials", ["bank","financials"]),
+    ("C", "Citigroup Inc.", "Financials", "Finanza", "USA", "USA Financials", ["bank","financials"]),
+    ("GS", "Goldman Sachs", "Financials", "Finanza", "USA", "USA Financials", ["investmentbank","financials"]),
+    ("MS", "Morgan Stanley", "Financials", "Finanza", "USA", "USA Financials", ["investmentbank","wealth"]),
+    ("V", "Visa Inc.", "Financials", "Finanza", "USA", "USA Financials", ["payments","fintech"]),
+    ("MA", "Mastercard Inc.", "Financials", "Finanza", "USA", "USA Financials", ["payments","fintech"]),
+    ("BRK.B", "Berkshire Hathaway", "Financials", "Finanza", "USA", "USA Financials", ["holding","buffett"]),
+
+    # --- Europa MegaCap ---
+    ("NESN.SW", "Nestlé S.A.", "Consumer Staples", "Beni di consumo", "Switzerland", "Europa MegaCap", ["consumer","food","switzerland"]),
+    ("ROG.SW", "Roche Holding AG", "Healthcare", "Sanità", "Switzerland", "Europa MegaCap", ["healthcare","pharma","switzerland"]),
+    ("NOVN.SW", "Novartis AG", "Healthcare", "Sanità", "Switzerland", "Europa MegaCap", ["healthcare","pharma","switzerland"]),
+    ("SIE.DE", "Siemens AG", "Industrials", "Industriali", "Germany", "Europa MegaCap", ["industrial","germany"]),
+    ("SAP.DE", "SAP SE", "Technology", "Tecnologia", "Germany", "Europa MegaCap", ["software","germany"]),
+    ("ALV.DE", "Allianz SE", "Financials", "Finanza", "Germany", "Europa MegaCap", ["insurance","germany"]),
+    ("BMW.DE", "BMW AG", "Consumer Discretionary", "Consumi Discrezionali", "Germany", "Europa MegaCap", ["auto","germany"]),
+    ("MBG.DE", "Mercedes-Benz Group", "Consumer Discretionary", "Consumi Discrezionali", "Germany", "Europa MegaCap", ["auto","germany"]),
+    ("AIR.PA", "Airbus SE", "Industrials", "Industriali", "France", "Europa MegaCap", ["aerospace","france"]),
+    ("MC.PA", "LVMH", "Consumer Discretionary", "Consumi Discrezionali", "France", "Europa MegaCap", ["luxury","fashion","france"]),
+    ("OR.PA", "L'Oréal S.A.", "Consumer Staples", "Beni di consumo", "France", "Europa MegaCap", ["beauty","consumer","france"]),
+    ("SAN.PA", "Sanofi", "Healthcare", "Sanità", "France", "Europa MegaCap", ["pharma","france"]),
+    ("BN.PA", "Danone S.A.", "Consumer Staples", "Beni di consumo", "France", "Europa MegaCap", ["food","france"]),
+    ("ENEL.MI", "Enel SpA", "Utilities", "Utility", "Italy", "Europa MegaCap", ["utilities","italy"]),
+    ("ISP.MI", "Intesa Sanpaolo", "Financials", "Finanza", "Italy", "Europa MegaCap", ["bank","italy"]),
+    ("UCG.MI", "Unicredit", "Financials", "Finanza", "Italy", "Europa MegaCap", ["bank","italy"]),
+    ("STM.MI", "STMicroelectronics", "Technology", "Tecnologia", "Italy", "Europa MegaCap", ["semiconductors","italy"]),
+    ("RACE", "Ferrari N.V.", "Consumer Discretionary", "Consumi Discrezionali", "Italy", "Europa MegaCap", ["auto","luxury","italy"]),
+]
+
+df = pd.DataFrame(stocks, columns=["Ticker","Company","Sector","Settore","Country","Index","Tags"])
+df.to_csv("data/universe.csv", index=False)
+print("✅ Universe salvato in data/universe.csv con", len(df), "aziende")

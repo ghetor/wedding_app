@@ -1,0 +1,18 @@
+{
+  "Semiconductors": ["chips", "ai"],
+  "Automobiles": ["automotive", "electric_cars"],
+  "Restaurants": ["fast_food", "coffee"],
+  "Hotels, Restaurants & Leisure": ["travel"],
+  "Entertainment": ["movies", "streaming", "parks"],
+  "Luxury Goods": ["luxury"],
+  "Apparel & Footwear": ["sportswear"],
+  "Beverages": ["beverages"],
+  "Packaged Foods & Beverages": ["home_food", "snacks"],
+  "Energy": ["energy"],
+  "Aerospace & Defense": ["aerospace"],
+  "Software": ["software", "cloud", "ai"],
+  "Consumer Electronics": ["consumer_electronics", "gaming"],
+  "Social Media": ["social_media"],
+  "Interactive Media & Services": ["social_media", "streaming"],
+  "Media": ["streaming", "movies", "music"]
+}
