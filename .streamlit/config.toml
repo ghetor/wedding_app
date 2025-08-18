@@ -1,0 +1,7 @@
+[theme]
+base="light"
+primaryColor="#7C83FD"           # indaco soft
+backgroundColor="#FAFAFD"        # bianco con sfumatura fredda
+secondaryBackgroundColor="#F2F3FE"# violetto molto chiaro per card/box
+textColor="#1F2937"              # grigio antracite morbido
+font="sans serif"
