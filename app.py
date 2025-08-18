@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 from c_wedding_app import WeddingApp, I18N
+from uuid import uuid4
 
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered", initial_sidebar_state="collapsed")
 
@@ -137,7 +138,11 @@ if st.session_state.step == 3:
                 st.session_state.amounts[name] = amt
 
         total = sum(st.session_state.amounts.values())
-        st.markdown(f"### {T['total']}: **€ {total:,.2f}**".replace(",", "X").replace(".", ",").replace("X", ".") if st.session_state.lang=="it" else f"### {T['total']}: **€ {total:,.2f}**")
+        st.markdown(
+            f"### {T['total']}: **€ {total:,.2f}**".replace(",", "X").replace(".", ",").replace("X", ".")
+            if st.session_state.lang=="it"
+            else f"### {T['total']}: **€ {total:,.2f}**"
+        )
         st.info(T["instructions_safe"])
 
         colA, colB, colC = st.columns([1,1,1])
@@ -149,11 +154,13 @@ if st.session_state.step == 3:
                 selections = [(name, st.session_state.amounts[name]) for name in st.session_state.picked if st.session_state.amounts[name] > 0]
                 code = app.generate_gift_code(selections, lang=st.session_state.lang)
                 st.session_state.gift_code = code
+
                 # Persist a simple record (anonymous guest_id by session)
                 guest_id = st.session_state.get("_guest_id")
                 if not guest_id:
-                    guest_id = str(hash(st.session_state.get("answers", "")))[:10]
+                    guest_id = uuid4().hex[:10]   # <-- fix: non usiamo hash(dict)
                     st.session_state["_guest_id"] = guest_id
+
                 app.save_donation(guest_id, st.session_state.lang, selections, code)
                 goto(4)
         with colC:
