@@ -12,25 +12,6 @@ from typing import List, Dict, Tuple, Optional
 
 import pandas as pd
 
-# yfinance è opzionale: non la usiamo nella UI attuale, ma rimane compatibile
-try:
-    import yfinance as yf  # noqa: F401
-except Exception:
-    yf = None  # opzionale
-
-# requests è opzionale: se manca, useremo direttamente pandas.read_html(url)
-try:
-    import requests
-except Exception:
-    requests = None
-
-# file lock opzionale: se disponibile, riduce i rischi in scrittura concorrente
-try:
-    from filelock import FileLock
-except Exception:
-    FileLock = None
-
-
 # -------------------------
 # Minimal i18n dictionary
 # -------------------------
@@ -103,9 +84,8 @@ I18N = {
     },
 }
 
-
 # -------------------------
-# Emojis e fallback brand
+# Emoji di default (usate se non già nel CSV)
 # -------------------------
 EMOJI_MAP = {
     "Tesla": "🚗⚡", "Disney": "✨", "Coca-Cola": "🥤", "Apple": "🍏", "Nike": "👟",
@@ -113,279 +93,220 @@ EMOJI_MAP = {
     "Netflix": "🎬", "Microsoft": "🖥️", "Amazon": "📦", "Alphabet": "🔎",
     "Meta": "💬", "Shell": "🛢️", "TotalEnergies": "⚡", "ASML": "🔬",
     "Siemens": "🛠️", "LVMH": "👜", "Adidas": "👟", "PepsiCo": "🥤", "Starbucks": "☕",
-    "McDonald’s": "🍟", "Airbnb": "🏡", "Spotify": "🎵", "Samsung": "📱",
-    "NVIDIA": "🧠",
+    "McDonald’s": "🍟", "Airbnb": "🏡", "Spotify": "🎵", "Samsung": "📱", "NVIDIA": "🧠",
 }
 
-# Fallback curato (brand → (ticker, index_name))
+# Fallback (se il CSV non esiste proprio)
 FALLBACK_BRANDS = {
-    "Apple": ("AAPL", "NASDAQ-100"),
-    "Microsoft": ("MSFT", "NASDAQ-100"),
-    "Amazon": ("AMZN", "NASDAQ-100"),
-    "Alphabet": ("GOOGL", "NASDAQ-100"),
-    "Meta": ("META", "NASDAQ-100"),
-    "Tesla": ("TSLA", "NASDAQ-100"),
-    "Netflix": ("NFLX", "NASDAQ-100"),
-    "NVIDIA": ("NVDA", "NASDAQ-100"),
-    "Disney": ("DIS", "S&P 500"),
-    "Coca-Cola": ("KO", "S&P 500"),
-    "Nike": ("NKE", "S&P 500"),
-    "McDonald’s": ("MCD", "S&P 500"),
-    "PepsiCo": ("PEP", "S&P 500"),
-    "Starbucks": ("SBUX", "S&P 500"),
-    "Airbnb": ("ABNB", "NASDAQ-100"),
-    "Booking Holdings": ("BKNG", "NASDAQ-100"),
-    "Ferrari": ("RACE", "EuroStoxx-like"),
-    "ASML": ("ASML", "EuroStoxx 50"),
-    "Siemens": ("SIEGY", "EuroStoxx 50 (ADR)"),
-    "LVMH": ("LVMUY", "EuroStoxx 50 (ADR)"),
-    "Nestlé": ("NSRGY", "EuroStoxx 50 (ADR)"),
-    "TotalEnergies": ("TTE", "EuroStoxx 50"),
-    "Shell": ("SHEL", "EuroStoxx 50"),
-    "Adidas": ("ADDYY", "EuroStoxx 50 (ADR)"),
-    "Spotify": ("SPOT", "EU→US ADR"),
-    "Samsung": ("SSNLF", "KOR Large Cap (OTC)"),
-    "Airbus": ("EADSY", "EuroStoxx 50 (ADR)"),
+    "Apple": ("AAPL", "USA", "Information Technology", "Consumer Electronics"),
+    "Microsoft": ("MSFT", "USA", "Information Technology", "Software"),
+    "Amazon": ("AMZN", "USA", "Consumer Discretionary", "E-commerce & Cloud"),
+    "Alphabet": ("GOOGL", "USA", "Communication Services", "Search & Ads"),
+    "Meta": ("META", "USA", "Communication Services", "Social Media"),
+    "Tesla": ("TSLA", "USA", "Consumer Discretionary", "Automobiles (EVs)"),
+    "NVIDIA": ("NVDA", "USA", "Information Technology", "Semiconductors"),
+    "Netflix": ("NFLX", "USA", "Communication Services", "Streaming"),
+    "Disney": ("DIS", "USA", "Communication Services", "Entertainment"),
+    "Coca-Cola": ("KO", "USA", "Consumer Staples", "Beverages"),
+    "PepsiCo": ("PEP", "USA", "Consumer Staples", "Beverages & Snacks"),
+    "Nike": ("NKE", "USA", "Consumer Discretionary", "Apparel & Footwear"),
+    "McDonald’s": ("MCD", "USA", "Consumer Discretionary", "Fast Food"),
+    "Starbucks": ("SBUX", "USA", "Consumer Discretionary", "Coffeehouses"),
+    "Airbnb": ("ABNB", "USA", "Consumer Discretionary", "Lodging / OTA"),
+    "Booking Holdings": ("BKNG", "USA", "Consumer Discretionary", "Online Travel Agency"),
+    "ASML": ("ASML", "Netherlands", "Information Technology", "Semiconductor Equipment"),
+    "Siemens": ("SIEGY", "Germany", "Industrials", "Conglomerate / Automation"),
+    "LVMH": ("LVMUY", "France", "Consumer Discretionary", "Luxury Goods"),
+    "Nestlé": ("NSRGY", "Switzerland", "Consumer Staples", "Packaged Foods & Beverages"),
+    "TotalEnergies": ("TTE", "France", "Energy", "Integrated Oil & Gas"),
+    "Shell": ("SHEL", "UK", "Energy", "Integrated Oil & Gas"),
+    "Adidas": ("ADDYY", "Germany", "Consumer Discretionary", "Apparel & Footwear"),
+    "Spotify": ("SPOT", "Sweden", "Communication Services", "Music Streaming"),
+    "Ferrari": ("RACE", "Italy", "Consumer Discretionary", "Automobiles (Luxury)"),
+    "Airbus": ("EADSY", "Netherlands", "Industrials", "Aerospace & Defense"),
+    "Samsung": ("SSNLF", "South Korea", "Information Technology", "Consumer Electronics"),
 }
-
 
 class WeddingApp:
     """
-    Core logic: sorgenti dati, suggerimenti, generazione codice, salvataggio e statistiche.
+    Core logic: legge un CSV statico con le aziende.
+    Default path: data/universe.csv (puoi sostituirlo nel costruttore).
+    Nessuno scraping → avvii rapidissimi.
     """
 
-    def __init__(self, data_dir: str = ".", donations_csv: str = "donations.csv"):
+    def __init__(self, data_dir: str = ".", donations_csv: str = "donations.csv", universe_csv: str = "data/universe.csv"):
         self.data_dir = data_dir
         self.donations_csv = os.path.join(self.data_dir, donations_csv)
-        self._universe: Optional[pd.DataFrame] = None  # cache
+        self.universe_csv = os.path.join(self.data_dir, universe_csv) if not os.path.isabs(universe_csv) else universe_csv
+        self._universe: Optional[pd.DataFrame] = None
         self.random = random.Random(2025)
 
     # -------------------------
-    # Helpers rete/file
+    # Caricamento universo (CSV statico)
     # -------------------------
-    def _fetch_html(self, url: str, timeout: int = 8) -> Optional[str]:
+    def load_universe_csv(self) -> pd.DataFrame:
         """
-        Tenta di scaricare HTML con requests (se presente) altrimenti None.
-        Usiamo poi pandas.read_html sul testo scaricato per maggiore controllo del timeout.
+        Legge il CSV statico (richieste colonne minime: name, ticker).
+        Colonne opzionali usate se presenti: index, country, sector, subsector, emoji.
         """
         try:
-            if requests is None:
-                return None
-            resp = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
-            if resp.status_code == 200 and resp.text:
-                return resp.text
+            if os.path.exists(self.universe_csv):
+                df = pd.read_csv(self.universe_csv)
+                # Normalizza colonne minime
+                cols = {c.lower(): c for c in df.columns}
+                # Ensure required
+                if "name" not in [c.lower() for c in df.columns] or "ticker" not in [c.lower() for c in df.columns]:
+                    return pd.DataFrame()
+                # Rename robusto
+                rename_map = {}
+                for std in ["name", "ticker", "index", "country", "sector", "subsector", "emoji"]:
+                    if std not in df.columns and std in cols:
+                        rename_map[cols[std]] = std
+                # But if case-insensitive match exists, fix it
+                for c in list(df.columns):
+                    lc = c.lower()
+                    if lc in ["name","ticker","index","country","sector","subsector","emoji"] and c != lc:
+                        rename_map[c] = lc
+                if rename_map:
+                    df = df.rename(columns=rename_map)
+                # Fill optional
+                for opt in ["index","country","sector","subsector","emoji"]:
+                    if opt not in df.columns:
+                        df[opt] = ""
+                # Map emoji fallback se vuoto
+                df["emoji"] = df.apply(lambda r: (r["emoji"] if isinstance(r["emoji"], str) and r["emoji"] else EMOJI_MAP.get(str(r["name"]), "")), axis=1)
+                # Ordina e de-dup
+                df = df.dropna(subset=["name","ticker"]).drop_duplicates(subset=["ticker"]).sort_values("name").reset_index(drop=True)
+                return df[["name","ticker","index","country","sector","subsector","emoji"]]
         except Exception:
-            return None
-        return None
+            pass
+        return pd.DataFrame()
 
-    # -------------------------
-    # Data loading (3 indici)
-    # -------------------------
-    def load_index_sp500(self) -> pd.DataFrame:
-        url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-        try:
-            html = self._fetch_html(url)
-            if html:
-                tables = pd.read_html(html)
-            else:
-                tables = pd.read_html(url)  # fallback diretto
-            df = tables[0][["Security", "Symbol"]].rename(columns={"Security": "name", "Symbol": "ticker"})
-            df["index"] = "S&P 500"
-            return df
-        except Exception:
-            return pd.DataFrame()
-
-    def load_index_nasdaq100(self) -> pd.DataFrame:
-        url = "https://en.wikipedia.org/wiki/NASDAQ-100"
-        try:
-            html = self._fetch_html(url)
-            tables = pd.read_html(html) if html else pd.read_html(url)
-            # Cerca tabella con Company / Ticker
-            cand = None
-            for t in tables:
-                cols = {str(c).strip().lower() for c in t.columns}
-                if {"ticker", "company"} <= cols:
-                    cand = t
-                    break
-            if cand is None:
-                cand = tables[0]
-            df = cand.rename(columns={c: str(c).strip().lower() for c in cand.columns})
-            df = df[["company", "ticker"]].rename(columns={"company": "name"})
-            df["index"] = "NASDAQ-100"
-            return df
-        except Exception:
-            return pd.DataFrame()
-
-    def load_index_eurostoxx50(self) -> pd.DataFrame:
-        url = "https://en.wikipedia.org/wiki/EURO_STOXX_50"
-        try:
-            html = self._fetch_html(url)
-            tables = pd.read_html(html) if html else pd.read_html(url)
-            cand = None
-            for t in tables:
-                lc = [str(c).strip().lower() for c in t.columns]
-                if ("company" in lc) and ("ticker" in lc or "ticker symbol" in lc):
-                    cand = t
-                    break
-            if cand is None:
-                cand = tables[0]
-            df = cand.rename(columns={c: str(c).strip().lower() for c in cand.columns})
-            ticker_col = "ticker" if "ticker" in df.columns else ("ticker symbol" if "ticker symbol" in df.columns else df.columns[-1])
-            company_col = "company" if "company" in df.columns else df.columns[0]
-            df = df[[company_col, ticker_col]].rename(columns={company_col: "name", ticker_col: "ticker"})
-            df["index"] = "EuroStoxx 50"
-            return df
-        except Exception:
-            return pd.DataFrame()
-
-    # -------------------------
-    # Universo brand combinato
-    # -------------------------
     def build_universe(self, famous_only: bool = True) -> pd.DataFrame:
         """
-        Combina S&P 500, NASDAQ-100, EuroStoxx50 e fa fallback sui brand famosi.
-        Aggiunge emoji se disponibili. Cache in self._universe.
+        Usa il CSV se presente, altrimenti fallback curato.
+        famous_only è ignorato (il CSV è già curato).
         """
         if self._universe is not None:
             return self._universe
 
-        sp = self.load_index_sp500()
-        ndx = self.load_index_nasdaq100()
-        esx = self.load_index_eurostoxx50()
+        df = self.load_universe_csv()
+        if df.empty:
+            # Fallback minimo
+            data = []
+            for name, (ticker, country, sector, subsector) in FALLBACK_BRANDS.items():
+                data.append({
+                    "name": name,
+                    "ticker": ticker,
+                    "index": "Curated",
+                    "country": country,
+                    "sector": sector,
+                    "subsector": subsector,
+                    "emoji": EMOJI_MAP.get(name, ""),
+                })
+            df = pd.DataFrame(data)
 
-        combined = pd.concat([sp, ndx, esx], ignore_index=True).dropna()
-        if not combined.empty:
-            combined = combined.drop_duplicates(subset=["ticker"])
-        else:
-            # Fallback curato: sempre non vuoto
-            data = [{"name": k, "ticker": v[0], "index": v[1]} for k, v in FALLBACK_BRANDS.items()]
-            combined = pd.DataFrame(data)
-
-        if famous_only:
-            famous_names = set(FALLBACK_BRANDS.keys())
-            uni = combined.copy()
-            uni["is_famous"] = uni["name"].apply(lambda n: self._is_famous(n, famous_names))
-            keep = uni[uni["is_famous"]]
-            if keep.empty:
-                keep = combined.head(min(40, len(combined)))
-            combined = keep.drop(columns=["is_famous"]).reset_index(drop=True)
-
-        combined["emoji"] = combined["name"].map(EMOJI_MAP).fillna("")
-        self._universe = combined.sort_values("name").reset_index(drop=True)
+        self._universe = df
         return self._universe
 
-    def _is_famous(self, name: str, famous_names: set) -> bool:
-        nm = name.lower()
-        for f in famous_names:
-            if f.lower() in nm or nm in f.lower():
-                return True
-        return name in famous_names
+    def refresh_universe_from_disk(self) -> None:
+        """Ricarica il CSV (utile se lo aggiorni senza riavviare l'app)."""
+        self._universe = None
+        _ = self.build_universe()
 
     # -------------------------
-    # Suggerimenti basati sul quiz
+    # Suggerimenti (usa settore/subsettore + parole chiave)
     # -------------------------
     def suggestions(self, answers: Dict[str, str], k: int = 10) -> pd.DataFrame:
-        uni = self.build_universe(famous_only=True).copy()
+        uni = self.build_universe().copy()
         if uni.empty:
-            return pd.DataFrame(columns=["name", "ticker", "index", "emoji"])
+            return pd.DataFrame(columns=["name","ticker","index","emoji"])
 
-        score_list = []
         q1 = (answers.get("q1") or "").lower()
         q2 = (answers.get("q2") or "").lower()
         q3 = (answers.get("q3") or "").lower()
 
-        for _, row in uni.iterrows():
+        def sector_match(row) -> int:
             s = 0
-            n = str(row["name"]).lower()
+            name = str(row["name"]).lower()
+            sector = str(row.get("sector","")).lower()
+            sub = str(row.get("subsector","")).lower()
 
+            # Mappature leggere dal quiz
             # Q1: tipo regalo
-            if any(w in q1 for w in ["viaggi", "avventure", "travel", "adventure"]):
-                if any(x in n for x in ["booking", "airbus", "ferrari", "tesla", "airbnb"]):
+            if any(w in q1 for w in ["viaggi", "adventure", "travel", "avventure"]):
+                if any(x in sub for x in ["lodging", "travel", "aerospace"]) or any(x in name for x in ["booking", "airbnb", "airbus", "ferrari", "tesla"]):
                     s += 3
-            if any(w in q1 for w in ["cibo", "tradizion", "food"]):
-                if any(x in n for x in ["nestlé", "nestle", "coca", "pepsi", "starbucks", "mcdon"]):
+            if any(w in q1 for w in ["cibo", "food", "tradizion"]):
+                if "staple" in sector or any(x in sub for x in ["beverage", "coffee", "food"]) or any(x in name for x in ["nestlé","nestle","coca","pepsi","starbucks","mcdon"]):
                     s += 3
             if any(w in q1 for w in ["divert", "relax", "fun", "chill"]):
-                if any(x in n for x in ["disney", "netflix", "spotify"]):
+                if any(x in sub for x in ["streaming","entertainment","music"]) or any(x in name for x in ["disney","netflix","spotify"]):
                     s += 3
-            if any(w in q1 for w in ["futuro", "innov", "future", "innovation"]):
-                if any(x in n for x in ["tesla", "apple", "microsoft", "amazon", "alphabet", "meta", "nvidia", "asml", "samsung"]):
+            if any(w in q1 for w in ["futuro","future","innov"]):
+                if "information technology" in sector or any(x in name for x in ["tesla","nvidia","asml","apple","microsoft","samsung","alphabet","meta","amazon"]):
                     s += 3
 
-            # Q2: valore
+            # Q2: valori
             if "romant" in q2 or "romantic" in q2:
-                if "disney" in n or "lvmh" in n:
+                if "disney" in name or "lvmh" in name:
                     s += 2
-            if any(w in q2 for w in ["energia", "energy", "sport"]):
-                if any(x in n for x in ["nike", "adidas", "tesla", "total", "shell"]):
+            if any(w in q2 for w in ["energia","energy","sport"]):
+                if any(x in name for x in ["nike","adidas","tesla","total","shell"]):
                     s += 2
             if "magia" in q2 or "magic" in q2:
-                if "disney" in n:
+                if "disney" in name:
                     s += 2
-            if any(w in q2 for w in ["tecno", "tech", "modern"]):
-                if any(x in n for x in ["apple", "microsoft", "amazon", "alphabet", "meta", "nvidia", "asml", "samsung"]):
+            if any(w in q2 for w in ["tecno","tech","modern"]):
+                if "information technology" in sector or any(x in name for x in ["apple","microsoft","amazon","alphabet","meta","nvidia","asml","samsung"]):
                     s += 2
 
             # Q3: settore
-            if any(w in q3 for w in ["viaggi", "travel", "trasport", "transport"]):
-                if any(x in n for x in ["airbus", "booking", "airbnb", "ferrari", "tesla"]):
+            if any(w in q3 for w in ["viaggi","travel","trasport","transport"]):
+                if any(x in name for x in ["airbus","booking","airbnb","ferrari","tesla"]) or any(x in sub for x in ["aerospace","lodging","automobile"]):
                     s += 2
-            if any(w in q3 for w in ["food", "beverage", "cibo"]):
-                if any(x in n for x in ["starbucks", "nestlé", "nestle", "coca", "pepsi", "mcdon"]):
+            if any(w in q3 for w in ["food","beverage","cibo"]):
+                if "staple" in sector or any(x in sub for x in ["beverage","coffee","food"]):
                     s += 2
-            if any(w in q3 for w in ["intratten", "entertain"]):
-                if any(x in n for x in ["disney", "netflix", "spotify"]):
+            if any(w in q3 for w in ["intratten","entertain"]):
+                if any(x in sub for x in ["streaming","entertainment","music"]):
                     s += 2
-            if any(w in q3 for w in ["energia", "innov"]):
-                if any(x in n for x in ["tesla", "nvidia", "asml", "apple", "microsoft", "total", "shell", "siemens"]):
+            if any(w in q3 for w in ["energia","innov"]):
+                if "energy" in sector or "information technology" in sector:
                     s += 2
 
-            # Bonus popolarità
-            if row["name"] in FALLBACK_BRANDS:
+            # Bonus popolarità: emoji presente = brand noto
+            if str(row.get("emoji","")).strip():
                 s += 1
+            return s
 
-            score_list.append(s)
-
-        uni["score"] = score_list
+        uni["score"] = uni.apply(sector_match, axis=1)
         uni = uni.sort_values(["score", "name"], ascending=[False, True])
         top = uni.head(k).drop(columns=["score"])
         if len(top) < k:
             others = uni[~uni.index.isin(top.index)].sample(min(k - len(top), max(len(uni) - len(top), 0)), random_state=42)
-            top = pd.concat([top, others.drop(columns=["score"])]) if not others.empty else top
-        return top.reset_index(drop=True)
+            if not others.empty:
+                top = pd.concat([top, others.drop(columns=["score"])])
+        return top.reset_index(drop=True)[["name","ticker","index","emoji"]]
 
     # -------------------------
     # Generazione codice regalo
     # -------------------------
     def generate_gift_code(self, selections: List[Tuple[str, float]], lang: str = "it") -> str:
-        """
-        selections: lista di (brand_name, amount). Somma gli importi > 0.
-        Crea un codice leggibile + hash breve per unicità.
-        """
         total_val = sum(float(a) for _, a in selections if a and float(a) > 0)
         total = int(round(total_val)) if total_val > 0 else 0
-
-        # Hash breve per unicità (dipende da scelte + timestamp)
         seed = f"{json.dumps(selections, sort_keys=True)}|{int(time.time())}"
         h = hashlib.sha1(seed.encode()).hexdigest()[:6].upper()
-
-        # Slug brand (max 2)
         brands = [re.sub(r'[^A-Za-z0-9]+', '', (n or "")).upper() for n, a in selections if a and float(a) > 0]
         brands = [b for b in brands if b] or ["LOVE"]
         brands = brands[:2]
         prefix = "REGALO" if lang == "it" else "GIFT"
-
-        code = f"#{prefix}-{total}-{'-'.join(brands)}-{h}"
-        return code
+        return f"#{prefix}-{total}-{'-'.join(brands)}-{h}"
 
     # -------------------------
-    # Salvataggio donazioni
+    # Salvataggio donazioni (CSV append + best-effort)
     # -------------------------
     def save_donation(self, guest_id: str, lang: str, selections: List[Tuple[str, float]], code: str) -> None:
-        """
-        Scrive su CSV in append. Usa file lock se disponibile.
-        In caso di errore, non solleva eccezioni (best-effort).
-        """
         try:
             rows = []
             ts = int(time.time())
@@ -402,28 +323,16 @@ class WeddingApp:
                     "amount": amt,
                     "code": code,
                 })
-
             if not rows:
                 return
-
-            # Assicura esistenza dir
             os.makedirs(os.path.dirname(self.donations_csv) or ".", exist_ok=True)
-
-            lock_path = self.donations_csv + ".lock"
-            if FileLock is not None:
-                with FileLock(lock_path, timeout=4):
-                    self._append_rows_csv(rows, self.donations_csv)
-            else:
-                # Fallback senza lock
-                self._append_rows_csv(rows, self.donations_csv)
+            self._append_rows_csv(rows, self.donations_csv)
         except Exception:
-            # Non blocchiamo l'app
             pass
 
     def _append_rows_csv(self, rows: List[dict], csv_path: str) -> None:
         file_exists = os.path.exists(csv_path)
         fieldnames = ["timestamp", "guest_id", "lang", "brand", "amount", "code"]
-        # Apri in append + crea header se nuovo
         with open(csv_path, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             if not file_exists:
@@ -435,18 +344,12 @@ class WeddingApp:
     # Statistiche
     # -------------------------
     def load_stats(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Ritorna:
-          - top: DataFrame con colonne [brand, amount] ordinate desc
-          - codes: DataFrame con colonna [code] unici
-        """
         try:
             if not os.path.exists(self.donations_csv):
                 return pd.DataFrame(columns=["brand", "amount"]), pd.DataFrame(columns=["code"])
             df = pd.read_csv(self.donations_csv)
             if df.empty:
                 return pd.DataFrame(columns=["brand", "amount"]), pd.DataFrame(columns=["code"])
-            # Aggrega
             top = df.groupby("brand", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
             codes = df[["code"]].drop_duplicates()
             return top, codes
