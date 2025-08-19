@@ -21,6 +21,10 @@ if "gift_code" not in st.session_state:
 if "selected_tags" not in st.session_state:
     st.session_state.selected_tags = set()
 
+# helper per navigazione step
+def goto(step: int):
+    st.session_state.step = step
+
 T = I18N[st.session_state.lang]
 
 # ---------- Header + Language toggle ----------
@@ -28,11 +32,9 @@ colA, colB = st.columns([4,1])
 with colA:
     st.title(T["app_title"])
 with colB:
+    # piccolo menu compatto con HTML
     current = st.session_state.lang
-    if current == "it":
-        flag = "🇮🇹"
-    else:
-        flag = "🇬🇧"
+    flag = "🇮🇹" if current == "it" else "🇬🇧"
 
     html = f"""
     <style>
@@ -47,6 +49,8 @@ with colB:
         border-radius: 6px;
         font-size: 20px;
         cursor: pointer;
+        min-width: 45px;
+        text-align:center;
     }}
     .lang-options {{
         display: none;
@@ -77,54 +81,14 @@ with colB:
         </div>
     </div>
     """
-    st.components.v1.html(html, height=50)
+    st.components.v1.html(html, height=60)
 
-# piccolo hack per ricevere i messaggi
+# intercetta il messaggio e aggiorna la lingua
 lang_choice = st.session_state.lang
-if "_lang_msg" in st.session_state:
-    lang_choice = st.session_state._lang_msg
-if lang_choice != st.session_state.lang:
-    st.session_state.lang = lang_choice
-    T = I18N[st.session_state.lang]
-
-
-
-def goto(step): st.session_state.step = step
-
-# ---------- Smart Tag Selector ----------
-def tag_selector(tag_catalog: pd.DataFrame, lang="it"):
-    st.subheader("🎯 " + T["tags_title"])
-    selected_tags = st.session_state.get("selected_tags", set())
-
-    groups = tag_catalog["group_key"].unique()
-    for group in groups:
-        with st.expander(f"📂 {group.capitalize()}"):
-            subset = tag_catalog[tag_catalog["group_key"] == group]
-            cols = st.columns(3)  # griglia 3 colonne
-            for i, row in subset.iterrows():
-                label = row["label_en"] if lang == "en" else row["label_it"]
-                emoji = row["emoji"] if pd.notna(row["emoji"]) and row["emoji"] != "?" else "✨"
-                tag_key = row["tag_key"]
-
-                if tag_key in selected_tags:
-                    style = "background-color:#cce5ff;border-radius:10px;padding:8px;border:2px solid #004085;"
-                else:
-                    style = "background-color:white;border-radius:10px;padding:8px;border:1px solid #ccc;"
-
-                with cols[i % 3]:
-                    if st.button(f"{emoji} {label}", key=f"tag_{tag_key}"):
-                        if tag_key in selected_tags:
-                            selected_tags.remove(tag_key)
-                        else:
-                            selected_tags.add(tag_key)
-
-    # salva stato
-    st.session_state["selected_tags"] = selected_tags
-
-    # mostriamo pillole dei selezionati
-    if selected_tags:
-        st.markdown("### ✅ Selezionati:")
-        st.markdown(" ".join([f"`{t}`" for t in selected_tags]))
+msg = st.experimental_get_query_params().get("lang", [None])[0]
+if msg in ["it", "en"] and msg != st.session_state.lang:
+    st.session_state.lang = msg
+    T = I18N[msg]
 
 
 # ---------- Step 0 Welcome ----------
@@ -136,31 +100,13 @@ if st.session_state.step == 0:
 # ---------- Step 1 Tags ----------
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
+    st.subheader("🎈 " + ("Scegli le tue bolle preferite" if st.session_state.lang=="it" else "Pick your favorite bubbles"))
 
-    # --- Mini quiz (opzionale, puoi toglierlo se vuoi)
-    st.subheader("✨ Mini quiz per scoprire i tuoi temi")
-
-    q1 = st.radio(
-        "Se fosse un viaggio di nozze sarebbe…",
-        ["🌴 Relax", "🚀 Avventura", "🎭 Cultura"],
-        key="quiz1"
-    )
-    q2 = st.radio(
-        "Il regalo perfetto ha a che fare con…",
-        ["🤖 Tecnologia", "🍷 Cibo & bevande", "💎 Lusso"],
-        key="quiz2"
-    )
-
-    st.markdown("---")
-
-    # --- Bubbles selezionabili
-    st.subheader("🎈 Scegli le tue bolle preferite")
-
-    bubbles = [
+    TAGS = [
         ("ai", "🤖", "AI / Tech"),
-        ("chips", "💻", "Chips"),
+        ("chips", "💾", "Chips"),
         ("cloud", "☁️", "Cloud"),
-        ("ecars", "⚡", "E-Cars"),
+        ("ecars", "⚡🚗", "E-Cars"),
         ("movies", "🎬", "Movies"),
         ("music", "🎵", "Music"),
         ("luxury", "💎", "Luxury"),
@@ -171,36 +117,41 @@ elif st.session_state.step == 1:
         ("green", "🌱", "Green"),
     ]
 
+    # inizializza se non c'è
     if "selected_tags" not in st.session_state:
         st.session_state.selected_tags = set()
 
-    cols = st.columns(6)
-    for i, (key, emoji, label) in enumerate(bubbles):
-        with cols[i % 6]:
-            selected = key in st.session_state.selected_tags
-            style = f"""
-                background-color: {'#ffcccc' if selected else 'white'};
-                border: 2px solid {'#ff6666' if selected else '#ccc'};
-                border-radius: 50%;
-                padding: 25px;
-                text-align: center;
-                cursor: pointer;
-                font-size: 14px;
-                margin: 5px;
-            """
-            if st.button(f"{emoji} {label}", key=f"bubble_{key}"):
-                if selected:
-                    st.session_state.selected_tags.remove(key)
-                else:
-                    st.session_state.selected_tags.add(key)
-            st.markdown(
-                f"<div style='{style}'>{emoji}<br>{label}</div>",
-                unsafe_allow_html=True
-            )
+    html = "<div style='display:flex;flex-wrap:wrap;gap:15px;'>"
+    for key, emoji, label in TAGS:
+        active = key in st.session_state.selected_tags
+        bg = "#ffcccc" if active else "white"
+        border = "3px solid #ff4b4b" if active else "2px solid #ccc"
+        html += f"""
+        <div onclick="var p=document.querySelector('input#{key}');
+                      p.checked=!p.checked; p.dispatchEvent(new Event('change'));"
+             style="cursor:pointer;width:90px;height:90px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;
+                    flex-direction:column;background:{bg};border:{border};
+                    font-size:13px;">
+            <div style="font-size:22px;">{emoji}</div>
+            <div>{label}</div>
+        </div>
+        <input type="checkbox" id="{key}" style="display:none" {'checked' if active else ''}>
+        """
+    html += "</div>"
 
-    # --- Pulsante avanti
-    st.markdown(" ")
+    selected = st.html(html)  # se usi st.markdown(unsafe_allow_html=True) meglio ancora
+
+    # aggiorna lo stato
+    for key, _, _ in TAGS:
+        val = st.session_state.get(key, False)
+        if val:
+            st.session_state.selected_tags.add(key)
+        else:
+            st.session_state.selected_tags.discard(key)
+
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
+
 
 
 
