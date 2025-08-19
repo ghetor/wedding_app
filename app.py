@@ -28,13 +28,7 @@ div[data-testid="stCheckbox"] { margin: .35rem .25rem .35rem .1rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- CSS: selectbox compatta per la lingua ---
-st.markdown("""
-<style>
-div[data-baseweb="select"] { min-width: 70px !important; max-width: 70px !important; }
-div[data-testid="stSelectbox"] label { display:none !important; }
-</style>
-""", unsafe_allow_html=True)
+
 
 # ---------- Init session_state ----------
 if "step" not in st.session_state: st.session_state.step = 0
