@@ -29,16 +29,21 @@ with colA:
     st.title(T["app_title"])
 with colB:
     lang = st.selectbox(
-        "", 
+        "",
         options=[("it","🇮🇹"), ("en","🇬🇧")],
         index=0 if st.session_state.lang=="it" else 1,
         format_func=lambda x: x[1],
         key="lang_select",
+        label_visibility="collapsed"
+    )
+    st.markdown(
+        "<style>.stSelectbox div[data-baseweb='select'] {min-width: 60px !important;}</style>",
+        unsafe_allow_html=True
     )
     if lang[0] != st.session_state.lang:
         st.session_state.lang = lang[0]
         T = I18N[st.session_state.lang]
-st.divider()
+
 
 def goto(step): st.session_state.step = step
 
@@ -147,37 +152,34 @@ elif st.session_state.step == 1:
     .bubble {
         width: 90px; height: 90px;
         border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; font-weight: bold;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-size: 18px; font-weight: bold;
         cursor: pointer;
-        transition: all 0.3s ease;
-        animation: float 3s ease-in-out infinite;
+        transition: all 0.25s ease;
+        border: 2px solid #ccc;
     }
     .bubble:hover {
-        transform: scale(1.15) rotate(5deg);
-        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        transform: scale(1.1);
+        border-color: #ff6b81;
     }
     .bubble.selected {
         background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        border-color: #ff6b81;
         color: black;
-    }
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-12px); }
-        100% { transform: translateY(0px); }
     }
     </style>
     <div class="bubble-container">
     """
     for key, emoji, label in bubbles:
         sel_class = "selected" if key in selected or key in suggested else ""
-        html_bubbles += f'<div class="bubble {sel_class}" onclick="toggleBubble(\'{key}\')">{emoji}<br>{label}</div>'
+        html_bubbles += f'<div class="bubble {sel_class}" onclick="toggleBubble(\'{key}\')">{emoji}<br><small>{label}</small></div>'
     html_bubbles += "</div>"
     html_bubbles += """
     <script>
     function toggleBubble(tag) {
-        var el = window.parent.document.querySelectorAll('[data-testid="stSessionState"]')[0];
-        var data = JSON.parse(el.innerText);
+        const el = window.parent.document.querySelectorAll('[data-testid="stSessionState"]')[0];
+        const data = JSON.parse(el.innerText);
         if (!data.selected_tags) data.selected_tags = [];
         if (data.selected_tags.includes(tag)) {
             data.selected_tags = data.selected_tags.filter(x => x !== tag);
