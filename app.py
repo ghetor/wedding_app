@@ -17,6 +17,8 @@ if "amounts" not in st.session_state:
     st.session_state.amounts = {}
 if "gift_code" not in st.session_state:
     st.session_state.gift_code = None
+if "selected_tags" not in st.session_state:
+    st.session_state.selected_tags = set()
 
 T = I18N[st.session_state.lang]
 
@@ -39,6 +41,42 @@ st.divider()
 
 def goto(step): st.session_state.step = step
 
+# ---------- Smart Tag Selector ----------
+def tag_selector(tag_catalog: pd.DataFrame, lang="it"):
+    st.subheader("🎯 " + T["tags_title"])
+    selected_tags = st.session_state.get("selected_tags", set())
+
+    groups = tag_catalog["group_key"].unique()
+    for group in groups:
+        with st.expander(f"📂 {group.capitalize()}"):
+            subset = tag_catalog[tag_catalog["group_key"] == group]
+            cols = st.columns(3)  # griglia 3 colonne
+            for i, row in subset.iterrows():
+                label = row["label_en"] if lang == "en" else row["label_it"]
+                emoji = row["emoji"] if pd.notna(row["emoji"]) and row["emoji"] != "?" else "✨"
+                tag_key = row["tag_key"]
+
+                if tag_key in selected_tags:
+                    style = "background-color:#cce5ff;border-radius:10px;padding:8px;border:2px solid #004085;"
+                else:
+                    style = "background-color:white;border-radius:10px;padding:8px;border:1px solid #ccc;"
+
+                with cols[i % 3]:
+                    if st.button(f"{emoji} {label}", key=f"tag_{tag_key}"):
+                        if tag_key in selected_tags:
+                            selected_tags.remove(tag_key)
+                        else:
+                            selected_tags.add(tag_key)
+
+    # salva stato
+    st.session_state["selected_tags"] = selected_tags
+
+    # mostriamo pillole dei selezionati
+    if selected_tags:
+        st.markdown("### ✅ Selezionati:")
+        st.markdown(" ".join([f"`{t}`" for t in selected_tags]))
+
+
 # ---------- Step 0 Welcome ----------
 if st.session_state.step == 0:
     st.header(T["welcome_title"])
@@ -49,19 +87,7 @@ if st.session_state.step == 0:
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
     tag_catalog = app.load_tag_catalog()
-    lang = st.session_state.lang
-    grouped = {}
-    for _, row in tag_catalog.iterrows():
-        g = row["group_key"]
-        grouped.setdefault(g, []).append(row)
-    selected = set()
-    for g, rows in grouped.items():
-        with st.expander(g):
-            for r in rows:
-                label = f"{r['emoji']} {r['label_it'] if lang=='it' else r['label_en']}"
-                if st.checkbox(label, key=f"tag_{r['tag_key']}"):
-                    selected.add(r["tag_key"])
-    st.session_state.selected_tags = selected
+    tag_selector(tag_catalog, lang=st.session_state.lang)
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
 
 # ---------- Step 2 Companies ----------

@@ -17,9 +17,9 @@ import pandas as pd
 # -------------------------
 I18N = {
     "it": {
-        "app_title": "Gioco degli Auguri • Wedding App",
+        "app_title": "Gioco degli Auguri",
         "welcome_title": "Benvenuto! 🎉",
-        "welcome_sub": "Trasforma il tuo regalo in simboli di buon augurio (niente finanza vera, promesso!)",
+        "welcome_sub": "Trasforma il tuo regalo in simboli di buon augurio e fa si che cresca col tempo!\nNiente investimenti reali, promesso!",
         "start_quiz": "Inizia",
         "profile_title": "Step 1 • Scegli i temi",
         "to_suggestions": "Vedi aziende suggerite",
@@ -27,8 +27,8 @@ I18N = {
         "suggestions_sub": "Spunta i simboli che vuoi regalare (puoi anche cercare).",
         "search_placeholder": "Cerca un’azienda (es. Disney, Ferrari)…",
         "to_amounts": "Conferma selezioni",
-        "amounts_title": "Step 3 • Importi",
-        "amounts_sub": "Assegna un importo a ciascun simbolo scelto. È solo un gioco simbolico 😉",
+        "amounts_title": "Step 3 • \"Investi\" il tuo regalo",
+        "amounts_sub": "Assegna un importo a ciascun simbolo scelto 😉",
         "total": "Totale",
         "instructions_safe": "Non stai comprando azioni vere: è solo un gioco simbolico 🎁. Il regalo vero è il bonifico.",
         "generate_code": "Genera codice regalo",
@@ -45,7 +45,7 @@ I18N = {
         "tags_title": "Scegli i temi (puoi aprire i gruppi e selezionare più tag)",
     },
     "en": {
-        "app_title": "Good Wishes Game • Wedding App",
+        "app_title": "Good Wishes Game",
         "welcome_title": "Welcome! 🎉",
         "welcome_sub": "Turn your gift into symbolic good-luck tokens (no real finance, promise!)",
         "start_quiz": "Start",
@@ -77,6 +77,8 @@ I18N = {
 # -------------------------
 # Classe core
 # -------------------------
+
+
 class WeddingApp:
     def __init__(self, data_dir: str = ".", donations_csv: str = "donations.csv",
                  universe_csv: str = "data/universe.csv", tag_catalog_csv: str = "data/tag_catalog.csv"):
@@ -92,7 +94,8 @@ class WeddingApp:
     def load_universe(self) -> pd.DataFrame:
         if self._universe is None:
             if not os.path.exists(self.universe_csv):
-                raise FileNotFoundError(f"Universe not found: {self.universe_csv}")
+                raise FileNotFoundError(
+                    f"Universe not found: {self.universe_csv}")
             df = pd.read_csv(self.universe_csv)
             for col in ["tags_keys", "tags_it", "tags_en"]:
                 if col not in df.columns:
@@ -104,7 +107,7 @@ class WeddingApp:
         if self._tags is not None:
             return self._tags
         if not os.path.exists(self.tag_catalog_csv):
-            return pd.DataFrame(columns=["group_key","tag_key","label_it","label_en","emoji"])
+            return pd.DataFrame(columns=["group_key", "tag_key", "label_it", "label_en", "emoji"])
         df = pd.read_csv(self.tag_catalog_csv)
         self._tags = df
         return df
@@ -118,8 +121,10 @@ class WeddingApp:
         uni = self.load_universe().copy()
         if not selected:
             return uni
+
         def any_match(keys_str: str) -> bool:
-            keys = [k.strip() for k in (keys_str or "").split(";") if k.strip()]
+            keys = [k.strip()
+                    for k in (keys_str or "").split(";") if k.strip()]
             return any(k in selected for k in keys)
         mask = uni["tags_keys"].apply(any_match)
         return uni[mask].reset_index(drop=True)
@@ -136,7 +141,8 @@ class WeddingApp:
         total = int(round(total_val)) if total_val > 0 else 0
         seed = f"{json.dumps(selections, sort_keys=True)}|{int(time.time())}"
         h = hashlib.sha1(seed.encode()).hexdigest()[:6].upper()
-        brands = [re.sub(r'[^A-Za-z0-9]+', '', (n or "")).upper() for n, a in selections if a and float(a) > 0]
+        brands = [re.sub(r'[^A-Za-z0-9]+', '', (n or "")).upper()
+                  for n, a in selections if a and float(a) > 0]
         brands = [b for b in brands if b] or ["LOVE"]
         brands = brands[:2]
         prefix = "REGALO" if lang == "it" else "GIFT"
@@ -162,14 +168,16 @@ class WeddingApp:
                 })
             if not rows:
                 return
-            os.makedirs(os.path.dirname(self.donations_csv) or ".", exist_ok=True)
+            os.makedirs(os.path.dirname(self.donations_csv)
+                        or ".", exist_ok=True)
             self._append_rows_csv(rows, self.donations_csv)
         except Exception:
             pass
 
     def _append_rows_csv(self, rows: List[dict], csv_path: str) -> None:
         file_exists = os.path.exists(csv_path)
-        fieldnames = ["timestamp", "guest_id", "lang", "brand", "amount", "code"]
+        fieldnames = ["timestamp", "guest_id",
+                      "lang", "brand", "amount", "code"]
         with open(csv_path, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             if not file_exists:
@@ -185,7 +193,8 @@ class WeddingApp:
             df = pd.read_csv(self.donations_csv)
             if df.empty:
                 return pd.DataFrame(columns=["brand", "amount"]), pd.DataFrame(columns=["code"])
-            top = df.groupby("brand", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
+            top = df.groupby("brand", as_index=False)[
+                "amount"].sum().sort_values("amount", ascending=False)
             codes = df[["code"]].drop_duplicates()
             return top, codes
         except Exception:
