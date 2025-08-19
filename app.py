@@ -11,6 +11,23 @@ app = WeddingApp()
 
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
 
+st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
+
+# --- CSS per stile (checkbox + selectbox lingua compatto) ---
+st.markdown("""
+<style>
+/* restringe i selectbox (es. lingua) */
+div[data-baseweb="select"] { min-width: 70px !important; max-width: 70px !important; }
+div[data-testid="stSelectbox"] label { display:none !important; }  /* nasconde l'etichetta vuota */
+
+/* Step 1: checkbox più ariosi */
+div[data-testid="stCheckbox"] label p {
+  font-size: 0.98rem !important;
+}
+div[data-testid="stCheckbox"] { margin: .35rem .25rem .35rem .1rem; }
+</style>
+""", unsafe_allow_html=True)
+
 # --- CSS: selectbox compatta per la lingua ---
 st.markdown("""
 <style>
@@ -121,38 +138,80 @@ elif st.session_state.step == 2:
     st.header(T["suggestions_title"])
     st.caption(T["suggestions_sub"])
 
-    df = app.filter_universe_by_tag_keys(st.session_state.selected_tags).copy()
+    uni = app.load_universe().copy()
+    # suggeriti dai tag
+    df_suggested = app.filter_universe_by_tag_keys(st.session_state.selected_tags).copy()
 
-    # Barra di ricerca
-    search = st.text_input(T["search_placeholder"])
-    if search:
-        df = df[df["Company"].str.contains(search, case=False, na=False)]
+    # barra di ricerca (cerca SEMPRE nell’universo intero)
+    q = st.text_input(T["search_placeholder"]).strip()
+    df_search = pd.DataFrame(columns=uni.columns)
+    if q:
+        mask = (
+            uni["Company"].str.contains(q, case=False, na=False) |
+            uni.get("Ticker", pd.Series(False, index=uni.index)).astype(str).str.contains(q, case=False, na=False)
+        )
+        df_search = uni[mask].copy()
 
-    # Cards aziende + bottone "Aggiungi al carrello"
+    # unione suggeriti + ricerca (senza duplicati)
+    if not df_suggested.empty and not df_search.empty:
+        df = pd.concat([df_suggested, df_search]).drop_duplicates(subset=["Ticker"], keep="first")
+    elif not df_suggested.empty:
+        df = df_suggested
+    else:
+        df = df_search
+
+    # Fallback carino se vuoto: mostra un mix di brand noti o random
     if df.empty:
-        st.info("Nessuna azienda trovata." if st.session_state.lang=="it" else "No companies found.")
-    else:
-        for _, row in df.iterrows():
-            col1, col2 = st.columns([3,1])
-            with col1:
-                st.write(f"**{row['Company']}** ({row['Ticker']})")
-                st.caption(app.display_tags(row, st.session_state.lang))
-            with col2:
-                if st.button("🛒 Aggiungi", key=f"add_{row['Ticker']}"):
-                    if row["Company"] not in st.session_state.cart:
-                        st.session_state.cart.append(row["Company"])
+        st.info("Nessuna azienda trovata.")
+        # prova a proporre brand molto noti se presenti
+        known = ["AAPL","MSFT","GOOGL","AMZN","TSLA","META","NVDA","DIS","NFLX","NKE","SONY","F","BMW","RACE","RMS.PA"]
+        df_known = uni[uni["Ticker"].isin(known)]
+        if df_known.empty:
+            df = uni.sample(min(12, len(uni)), random_state=42)
+        else:
+            df = df_known
 
-    st.markdown("### 🛍️ Carrello attuale")
-    if st.session_state.cart:
-        st.write(", ".join(st.session_state.cart))
-    else:
-        st.info("Carrello vuoto.")
+    # --- rendering a cards 3-col ---
+    st.markdown("### 🛍️ Carrello")
+    cart = st.session_state.cart
+    colL, colR = st.columns([3,1])
+    with colL:
+        if cart:
+            st.write(", ".join(cart))
+        else:
+            st.info("Carrello vuoto.")
+    with colR:
+        st.button(f"🧺 Svuota ({len(cart)})", on_click=lambda: cart.clear())
 
+    st.markdown("---")
+
+    cols = st.columns(3)
+    for i, (_, row) in enumerate(df.iterrows()):
+        with cols[i % 3]:
+            name = row["Company"]
+            tick = row["Ticker"]
+            tags = app.display_tags(row, st.session_state.lang)
+            st.markdown(
+                f"""
+                <div style="border:1px solid #e6e6e6;border-radius:12px;padding:12px;margin:6px 0;">
+                  <div style="font-weight:700;">{name} <span style="opacity:.6">({tick})</span></div>
+                  <div style="font-size:0.9rem;opacity:.8">{tags}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            if name in cart:
+                st.button("✅ Rimuovi", key=f"rm_{tick}", on_click=lambda n=name: cart.remove(n))
+            else:
+                st.button("🛒 Aggiungi", key=f"add_{tick}", on_click=lambda n=name: cart.append(n))
+
+    st.markdown(" ")
     col1, col2 = st.columns(2)
     with col1:
         st.button(T["back"], on_click=lambda: goto(1))
     with col2:
         st.button(T["to_amounts"], on_click=lambda: goto(3), type="primary")
+
 
 # ---------- Step 3 Amounts ----------
 elif st.session_state.step == 3:
