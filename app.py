@@ -4,63 +4,6 @@ import pandas as pd
 from c_wedding_app import WeddingApp, I18N
 import streamlit.components.v1 as components
 
-def animated_tag_selector(tag_catalog, lang="it"):
-    tags = []
-    for _, row in tag_catalog.iterrows():
-        label = row["label_en"] if lang == "en" else row["label_it"]
-        emoji = row["emoji"] if row["emoji"] not in [None, "?", "nan"] else "✨"
-        tags.append({"key": row["tag_key"], "label": f"{emoji} {label}"})
-
-    html = """
-    <style>
-    .bubble {
-      position: absolute;
-      border-radius: 50%;
-      padding: 15px 25px;
-      background: #f0f8ff;
-      border: 2px solid #0077b6;
-      cursor: pointer;
-      user-select: none;
-      animation: float 10s infinite ease-in-out;
-    }
-    @keyframes float {
-      0%   { transform: translateY(0px); }
-      50%  { transform: translateY(-30px); }
-      100% { transform: translateY(0px); }
-    }
-    .bubble.selected {
-      background: #90e0ef;
-      border-color: #03045e;
-      font-weight: bold;
-    }
-    </style>
-    <div id="bubble-container" style="position:relative; height:500px;">
-    """
-    import random
-    for t in tags:
-        x = random.randint(0, 80)
-        y = random.randint(0, 80)
-        html += f'<div class="bubble" style="left:{x}%;top:{y}%;" onclick="toggleBubble(this, \'{t["key"]}\')">{t["label"]}</div>'
-    html += """
-    </div>
-    <script>
-    const selected = new Set();
-    function toggleBubble(el, key) {
-      if (selected.has(key)) {
-        selected.delete(key);
-        el.classList.remove("selected");
-      } else {
-        selected.add(key);
-        el.classList.add("selected");
-      }
-      const q = new URLSearchParams(window.location.search);
-      q.set("selected_tags", Array.from(selected).join(","));
-      window.history.replaceState(null, "", "?" + q.toString());
-    }
-    </script>
-    """
-    components.html(html, height=600)
-#%%
 app = WeddingApp()
 
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
@@ -141,20 +84,116 @@ if st.session_state.step == 0:
     st.write(T["welcome_sub"])
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
 
-# ---------- Step 1 Tags ----------
+# ---------- Step 1 Tags (Gamified with Bubbles + Quiz) ----------
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
-    tag_catalog = app.load_tag_catalog()
-    animated_tag_selector(tag_catalog, lang=st.session_state.lang)
+    lang = st.session_state.lang
 
-    # Leggiamo le scelte dai query params
-    qparams = st.experimental_get_query_params()
-    selected = set()
-    if "selected_tags" in qparams:
-        selected = set(qparams["selected_tags"][0].split(","))
-    st.session_state.selected_tags = selected
+    # --- micro quiz ---
+    st.subheader("✨ Mini quiz per scoprire i tuoi temi")
+    q1 = st.radio(
+        "Se fosse un viaggio di nozze sarebbe…",
+        ["🌴 Relax", "🚀 Avventura", "🎭 Cultura"],
+        key="quiz1"
+    )
+    q2 = st.radio(
+        "Il regalo perfetto ha a che fare con…",
+        ["🤖 Tecnologia", "🍷 Cibo & bevande", "💎 Lusso"],
+        key="quiz2"
+    )
+
+    # mappo risposte a tag suggeriti
+    quiz_map = {
+        "🌴 Relax": ["travel", "lifestyle"],
+        "🚀 Avventura": ["mobility", "tech_ai"],
+        "🎭 Cultura": ["movies", "music", "books"],
+        "🤖 Tecnologia": ["tech_ai", "chips"],
+        "🍷 Cibo & bevande": ["food_bev"],
+        "💎 Lusso": ["luxury", "sportswear"]
+    }
+    suggested = set()
+    for ans in [q1, q2]:
+        suggested.update(quiz_map.get(ans, []))
+
+    st.markdown("### 🎈 Scegli le tue bolle preferite")
+
+    # lista fissa di 12 bolle
+    bubbles = [
+        ("tech_ai", "🤖", "AI / Tech"),
+        ("chips", "💻", "Chips"),
+        ("cloud", "☁️", "Cloud"),
+        ("electric_cars", "🚗⚡", "E-Cars"),
+        ("movies", "🎬", "Movies"),
+        ("music", "🎶", "Music"),
+        ("luxury", "💎", "Luxury"),
+        ("sportswear", "👟", "Sport"),
+        ("travel", "✈️", "Travel"),
+        ("food_bev", "🍔", "Food & Bev"),
+        ("pets", "🐶", "Pets"),
+        ("green", "🌱", "Green"),
+    ]
+
+    # salvo selezioni
+    selected = st.session_state.get("selected_tags", set())
+    html_bubbles = """
+    <style>
+    .bubble-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .bubble {
+        width: 90px; height: 90px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        animation: float 3s ease-in-out infinite;
+    }
+    .bubble:hover {
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    .bubble.selected {
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        color: black;
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-12px); }
+        100% { transform: translateY(0px); }
+    }
+    </style>
+    <div class="bubble-container">
+    """
+    for key, emoji, label in bubbles:
+        sel_class = "selected" if key in selected or key in suggested else ""
+        html_bubbles += f'<div class="bubble {sel_class}" onclick="toggleBubble(\'{key}\')">{emoji}<br>{label}</div>'
+    html_bubbles += "</div>"
+    html_bubbles += """
+    <script>
+    function toggleBubble(tag) {
+        var el = window.parent.document.querySelectorAll('[data-testid="stSessionState"]')[0];
+        var data = JSON.parse(el.innerText);
+        if (!data.selected_tags) data.selected_tags = [];
+        if (data.selected_tags.includes(tag)) {
+            data.selected_tags = data.selected_tags.filter(x => x !== tag);
+        } else {
+            data.selected_tags.push(tag);
+        }
+        el.innerText = JSON.stringify(data);
+        location.reload();
+    }
+    </script>
+    """
+
+    st.components.v1.html(html_bubbles, height=400)
 
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
+
 
 # ---------- Step 2 Companies ----------
 elif st.session_state.step == 2:
