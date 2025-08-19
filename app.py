@@ -2,29 +2,20 @@
 import streamlit as st
 import pandas as pd
 from c_wedding_app import WeddingApp, I18N
-import streamlit.components.v1 as components
 
 app = WeddingApp()
 
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
 
-if "step" not in st.session_state:
-    st.session_state.step = 0
-if "lang" not in st.session_state:
-    st.session_state.lang = "it"
-if "picked" not in st.session_state:
-    st.session_state.picked = []
-if "amounts" not in st.session_state:
-    st.session_state.amounts = {}
-if "gift_code" not in st.session_state:
-    st.session_state.gift_code = None
-if "selected_tags" not in st.session_state:
-    st.session_state.selected_tags = set()
+# ---------- Init session_state ----------
+if "step" not in st.session_state: st.session_state.step = 0
+if "lang" not in st.session_state: st.session_state.lang = "it"
+if "selected_tags" not in st.session_state: st.session_state.selected_tags = set()
+if "cart" not in st.session_state: st.session_state.cart = []
+if "amounts" not in st.session_state: st.session_state.amounts = {}
+if "gift_code" not in st.session_state: st.session_state.gift_code = None
 
-# helper per navigazione step
-def goto(step: int):
-    st.session_state.step = step
-
+def goto(step): st.session_state.step = step
 T = I18N[st.session_state.lang]
 
 # ---------- Header + Language toggle ----------
@@ -32,174 +23,107 @@ colA, colB = st.columns([4,1])
 with colA:
     st.title(T["app_title"])
 with colB:
-    # piccolo menu compatto con HTML
-    current = st.session_state.lang
-    flag = "🇮🇹" if current == "it" else "🇬🇧"
-
-    html = f"""
-    <style>
-    .lang-dropdown {{
-        position: relative;
-        display: inline-block;
-    }}
-    .lang-button {{
-        background: white;
-        border: 1px solid #ccc;
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-size: 20px;
-        cursor: pointer;
-        min-width: 45px;
-        text-align:center;
-    }}
-    .lang-options {{
-        display: none;
-        position: absolute;
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        margin-top: 2px;
-        z-index: 9999;
-    }}
-    .lang-options div {{
-        padding: 4px 8px;
-        cursor: pointer;
-    }}
-    .lang-options div:hover {{
-        background: #eee;
-    }}
-    .lang-dropdown:hover .lang-options {{
-        display: block;
-    }}
-    </style>
-
-    <div class="lang-dropdown">
-        <div class="lang-button">{flag} ▼</div>
-        <div class="lang-options">
-            <div onclick="window.parent.postMessage({{'lang':'it'}}, '*')">🇮🇹 Italiano</div>
-            <div onclick="window.parent.postMessage({{'lang':'en'}}, '*')">🇬🇧 English</div>
-        </div>
-    </div>
-    """
-    st.components.v1.html(html, height=60)
-
-# intercetta il messaggio e aggiorna la lingua
-lang_choice = st.session_state.lang
-msg = st.experimental_get_query_params().get("lang", [None])[0]
-if msg in ["it", "en"] and msg != st.session_state.lang:
-    st.session_state.lang = msg
-    T = I18N[msg]
-
+    lang = st.selectbox(
+        "", 
+        options=[("it","🇮🇹 Italiano"), ("en","🇬🇧 English")],
+        index=0 if st.session_state.lang=="it" else 1,
+        format_func=lambda x: x[1],
+        key="lang_select_global"
+    )
+    if lang[0] != st.session_state.lang:
+        st.session_state.lang = lang[0]
+        T = I18N[st.session_state.lang]
+st.divider()
 
 # ---------- Step 0 Welcome ----------
 if st.session_state.step == 0:
     st.header(T["welcome_title"])
-    st.write(T["welcome_sub"])
+    st.markdown("""
+    👋 Benvenuto nel **Gioco degli Auguri**!  
+    Trasforma il tuo regalo in un simbolico carrello di azioni, settori e brand famosi.  
+    È un modo divertente per fare un regalo con significato, senza comprare azioni vere.  
+
+    ✨ Scegli i tuoi temi preferiti, componi il carrello e genera un codice speciale da usare nella causale del bonifico!
+    """)
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
 
 # ---------- Step 1 Tags ----------
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
-    st.subheader("🎈 " + ("Scegli le tue bolle preferite" if st.session_state.lang=="it" else "Pick your favorite bubbles"))
+    tag_catalog = app.load_tag_catalog()
+    lang = st.session_state.lang
 
-    TAGS = [
-        ("ai", "🤖", "AI / Tech"),
-        ("chips", "💾", "Chips"),
-        ("cloud", "☁️", "Cloud"),
-        ("ecars", "⚡🚗", "E-Cars"),
-        ("movies", "🎬", "Movies"),
-        ("music", "🎵", "Music"),
-        ("luxury", "💎", "Luxury"),
-        ("sport", "🏀", "Sport"),
-        ("travel", "✈️", "Travel"),
-        ("food", "🍔", "Food & Bev"),
-        ("pets", "🐶", "Pets"),
-        ("green", "🌱", "Green"),
-    ]
+    st.subheader("🎯 " + T["tags_title"])
+    selected_tags = st.session_state.selected_tags
 
-    # inizializza se non c'è
-    if "selected_tags" not in st.session_state:
-        st.session_state.selected_tags = set()
+    cols = st.columns(4)
+    for i, (_, row) in enumerate(tag_catalog.iterrows()):
+        label = row["label_en"] if lang=="en" else row["label_it"]
+        emoji = row["emoji"] if pd.notna(row["emoji"]) and row["emoji"]!="?" else "✨"
+        tag_key = row["tag_key"]
+        selected = tag_key in selected_tags
+        style = "background-color:#ffdddd;" if selected else "background-color:#f5f5f5;"
+        if cols[i % 4].button(f"{emoji} {label}", key=f"tag_{tag_key}"):
+            if selected: selected_tags.remove(tag_key)
+            else: selected_tags.add(tag_key)
 
-    html = "<div style='display:flex;flex-wrap:wrap;gap:15px;'>"
-    for key, emoji, label in TAGS:
-        active = key in st.session_state.selected_tags
-        bg = "#ffcccc" if active else "white"
-        border = "3px solid #ff4b4b" if active else "2px solid #ccc"
-        html += f"""
-        <div onclick="var p=document.querySelector('input#{key}');
-                      p.checked=!p.checked; p.dispatchEvent(new Event('change'));"
-             style="cursor:pointer;width:90px;height:90px;border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;
-                    flex-direction:column;background:{bg};border:{border};
-                    font-size:13px;">
-            <div style="font-size:22px;">{emoji}</div>
-            <div>{label}</div>
-        </div>
-        <input type="checkbox" id="{key}" style="display:none" {'checked' if active else ''}>
-        """
-    html += "</div>"
-
-    selected = st.html(html)  # se usi st.markdown(unsafe_allow_html=True) meglio ancora
-
-    # aggiorna lo stato
-    for key, _, _ in TAGS:
-        val = st.session_state.get(key, False)
-        if val:
-            st.session_state.selected_tags.add(key)
-        else:
-            st.session_state.selected_tags.discard(key)
-
+    st.session_state.selected_tags = selected_tags
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
-
-
-
 
 # ---------- Step 2 Companies ----------
 elif st.session_state.step == 2:
     st.header(T["suggestions_title"])
     st.caption(T["suggestions_sub"])
-    df = app.filter_universe_by_tag_keys(st.session_state.get("selected_tags", set()))
-    if df.empty:
-        st.warning("Nessuna azienda trovata." if st.session_state.lang=="it" else "No companies found.")
+    df = app.filter_universe_by_tag_keys(st.session_state.selected_tags)
+
+    # Search bar
+    search = st.text_input(T["search_placeholder"])
+    if search:
+        df = df[df["Company"].str.contains(search, case=False, na=False)]
+
+    # Company cards
+    for _, row in df.iterrows():
+        col1, col2 = st.columns([3,1])
+        with col1:
+            st.write(f"**{row['Company']}** ({row['Ticker']})")
+            st.caption(app.display_tags(row, st.session_state.lang))
+        with col2:
+            if st.button("🛒 Aggiungi", key=f"add_{row['Ticker']}"):
+                if row["Company"] not in st.session_state.cart:
+                    st.session_state.cart.append(row["Company"])
+
+    st.markdown("### 🛍️ Carrello attuale")
+    if st.session_state.cart:
+        st.write(", ".join(st.session_state.cart))
     else:
-        search = st.text_input(T["search_placeholder"])
-        if search:
-            df = df[df["Company"].str.contains(search, case=False, na=False)]
-        picks = []
-        for _, row in df.iterrows():
-            label = f"{row['Company']} ({row['Ticker']}) • {app.display_tags(row, st.session_state.lang)}"
-            if st.checkbox(label, key=f"pick_{row['Ticker']}"):
-                picks.append(row["Company"])
-        st.session_state.picked = picks
+        st.info("Carrello vuoto.")
+
     col1, col2 = st.columns(2)
-    with col1:
-        st.button(T["back"], on_click=lambda: goto(1))
-    with col2:
-        st.button(T["to_amounts"], on_click=lambda: goto(3), type="primary")
+    with col1: st.button(T["back"], on_click=lambda: goto(1))
+    with col2: st.button(T["to_amounts"], on_click=lambda: goto(3), type="primary")
 
 # ---------- Step 3 Amounts ----------
 elif st.session_state.step == 3:
     st.header(T["amounts_title"])
     st.caption(T["amounts_sub"])
-    if not st.session_state.picked:
+    if not st.session_state.cart:
         st.warning("Nessuna selezione." if st.session_state.lang=="it" else "No picks yet.")
     else:
-        for name in st.session_state.picked:
+        for name in st.session_state.cart:
             st.session_state.amounts.setdefault(name, 0.0)
             st.number_input(name, min_value=0.0, step=5.0,
                             value=float(st.session_state.amounts[name]),
                             key=f"amt_{name}")
             st.session_state.amounts[name] = st.session_state[f"amt_{name}"]
+
         total = sum(st.session_state.amounts.values())
         st.markdown(f"### {T['total']}: € {total:,.2f}")
         st.info(T["instructions_safe"])
         col1, col2 = st.columns(2)
-        with col1:
-            st.button(T["back"], on_click=lambda: goto(2))
+        with col1: st.button(T["back"], on_click=lambda: goto(2))
         with col2:
             if st.button(T["generate_code"], type="primary"):
-                selections = [(n, st.session_state.amounts[n]) for n in st.session_state.picked if st.session_state.amounts[n]>0]
+                selections = [(n, st.session_state.amounts[n]) for n in st.session_state.cart if st.session_state.amounts[n]>0]
                 code = app.generate_gift_code(selections, st.session_state.lang)
                 st.session_state.gift_code = code
                 guest_id = str(hash(str(selections)))[:10]
