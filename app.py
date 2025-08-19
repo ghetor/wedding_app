@@ -28,21 +28,65 @@ colA, colB = st.columns([4,1])
 with colA:
     st.title(T["app_title"])
 with colB:
-    lang = st.selectbox(
-        "",
-        options=[("it","🇮🇹"), ("en","🇬🇧")],
-        index=0 if st.session_state.lang=="it" else 1,
-        format_func=lambda x: x[1],
-        key="lang_select",
-        label_visibility="collapsed"
-    )
-    st.markdown(
-        "<style>.stSelectbox div[data-baseweb='select'] {min-width: 60px !important;}</style>",
-        unsafe_allow_html=True
-    )
-    if lang[0] != st.session_state.lang:
-        st.session_state.lang = lang[0]
-        T = I18N[st.session_state.lang]
+    current = st.session_state.lang
+    if current == "it":
+        flag = "🇮🇹"
+    else:
+        flag = "🇬🇧"
+
+    html = f"""
+    <style>
+    .lang-dropdown {{
+        position: relative;
+        display: inline-block;
+    }}
+    .lang-button {{
+        background: white;
+        border: 1px solid #ccc;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 20px;
+        cursor: pointer;
+    }}
+    .lang-options {{
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        margin-top: 2px;
+        z-index: 9999;
+    }}
+    .lang-options div {{
+        padding: 4px 8px;
+        cursor: pointer;
+    }}
+    .lang-options div:hover {{
+        background: #eee;
+    }}
+    .lang-dropdown:hover .lang-options {{
+        display: block;
+    }}
+    </style>
+
+    <div class="lang-dropdown">
+        <div class="lang-button">{flag} ▼</div>
+        <div class="lang-options">
+            <div onclick="window.parent.postMessage({{'lang':'it'}}, '*')">🇮🇹 Italiano</div>
+            <div onclick="window.parent.postMessage({{'lang':'en'}}, '*')">🇬🇧 English</div>
+        </div>
+    </div>
+    """
+    st.components.v1.html(html, height=50)
+
+# piccolo hack per ricevere i messaggi
+lang_choice = st.session_state.lang
+if "_lang_msg" in st.session_state:
+    lang_choice = st.session_state._lang_msg
+if lang_choice != st.session_state.lang:
+    st.session_state.lang = lang_choice
+    T = I18N[st.session_state.lang]
+
 
 
 def goto(step): st.session_state.step = step
@@ -89,13 +133,13 @@ if st.session_state.step == 0:
     st.write(T["welcome_sub"])
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
 
-# ---------- Step 1 Tags (Gamified with Bubbles + Quiz) ----------
+# ---------- Step 1 Tags ----------
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
-    lang = st.session_state.lang
 
-    # --- micro quiz ---
+    # --- Mini quiz (opzionale, puoi toglierlo se vuoi)
     st.subheader("✨ Mini quiz per scoprire i tuoi temi")
+
     q1 = st.radio(
         "Se fosse un viaggio di nozze sarebbe…",
         ["🌴 Relax", "🚀 Avventura", "🎭 Cultura"],
@@ -107,94 +151,57 @@ elif st.session_state.step == 1:
         key="quiz2"
     )
 
-    # mappo risposte a tag suggeriti
-    quiz_map = {
-        "🌴 Relax": ["travel", "lifestyle"],
-        "🚀 Avventura": ["mobility", "tech_ai"],
-        "🎭 Cultura": ["movies", "music", "books"],
-        "🤖 Tecnologia": ["tech_ai", "chips"],
-        "🍷 Cibo & bevande": ["food_bev"],
-        "💎 Lusso": ["luxury", "sportswear"]
-    }
-    suggested = set()
-    for ans in [q1, q2]:
-        suggested.update(quiz_map.get(ans, []))
+    st.markdown("---")
 
-    st.markdown("### 🎈 Scegli le tue bolle preferite")
+    # --- Bubbles selezionabili
+    st.subheader("🎈 Scegli le tue bolle preferite")
 
-    # lista fissa di 12 bolle
     bubbles = [
-        ("tech_ai", "🤖", "AI / Tech"),
+        ("ai", "🤖", "AI / Tech"),
         ("chips", "💻", "Chips"),
         ("cloud", "☁️", "Cloud"),
-        ("electric_cars", "🚗⚡", "E-Cars"),
+        ("ecars", "⚡", "E-Cars"),
         ("movies", "🎬", "Movies"),
-        ("music", "🎶", "Music"),
+        ("music", "🎵", "Music"),
         ("luxury", "💎", "Luxury"),
-        ("sportswear", "👟", "Sport"),
+        ("sport", "🏀", "Sport"),
         ("travel", "✈️", "Travel"),
-        ("food_bev", "🍔", "Food & Bev"),
+        ("food", "🍔", "Food & Bev"),
         ("pets", "🐶", "Pets"),
         ("green", "🌱", "Green"),
     ]
 
-    # salvo selezioni
-    selected = st.session_state.get("selected_tags", set())
-    html_bubbles = """
-    <style>
-    .bubble-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 15px;
-        margin-top: 15px;
-    }
-    .bubble {
-        width: 90px; height: 90px;
-        border-radius: 50%;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        font-size: 18px; font-weight: bold;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        border: 2px solid #ccc;
-    }
-    .bubble:hover {
-        transform: scale(1.1);
-        border-color: #ff6b81;
-    }
-    .bubble.selected {
-        background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-        border-color: #ff6b81;
-        color: black;
-    }
-    </style>
-    <div class="bubble-container">
-    """
-    for key, emoji, label in bubbles:
-        sel_class = "selected" if key in selected or key in suggested else ""
-        html_bubbles += f'<div class="bubble {sel_class}" onclick="toggleBubble(\'{key}\')">{emoji}<br><small>{label}</small></div>'
-    html_bubbles += "</div>"
-    html_bubbles += """
-    <script>
-    function toggleBubble(tag) {
-        const el = window.parent.document.querySelectorAll('[data-testid="stSessionState"]')[0];
-        const data = JSON.parse(el.innerText);
-        if (!data.selected_tags) data.selected_tags = [];
-        if (data.selected_tags.includes(tag)) {
-            data.selected_tags = data.selected_tags.filter(x => x !== tag);
-        } else {
-            data.selected_tags.push(tag);
-        }
-        el.innerText = JSON.stringify(data);
-        location.reload();
-    }
-    </script>
-    """
+    if "selected_tags" not in st.session_state:
+        st.session_state.selected_tags = set()
 
-    st.components.v1.html(html_bubbles, height=400)
+    cols = st.columns(6)
+    for i, (key, emoji, label) in enumerate(bubbles):
+        with cols[i % 6]:
+            selected = key in st.session_state.selected_tags
+            style = f"""
+                background-color: {'#ffcccc' if selected else 'white'};
+                border: 2px solid {'#ff6666' if selected else '#ccc'};
+                border-radius: 50%;
+                padding: 25px;
+                text-align: center;
+                cursor: pointer;
+                font-size: 14px;
+                margin: 5px;
+            """
+            if st.button(f"{emoji} {label}", key=f"bubble_{key}"):
+                if selected:
+                    st.session_state.selected_tags.remove(key)
+                else:
+                    st.session_state.selected_tags.add(key)
+            st.markdown(
+                f"<div style='{style}'>{emoji}<br>{label}</div>",
+                unsafe_allow_html=True
+            )
 
+    # --- Pulsante avanti
+    st.markdown(" ")
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
+
 
 
 # ---------- Step 2 Companies ----------
