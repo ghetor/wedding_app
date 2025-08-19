@@ -13,7 +13,7 @@ from typing import List, Dict, Tuple, Optional, Set
 import pandas as pd
 
 # -------------------------
-# Minimal i18n dictionary (usato per testi generali)
+# Minimal i18n dictionary
 # -------------------------
 I18N = {
     "it": {
@@ -78,30 +78,27 @@ I18N = {
 # Classe core
 # -------------------------
 class WeddingApp:
-    """
-    Legge:
-      - data/universe.csv (con tags_keys/tags_it/tags_en)
-      - data/tag_catalog.csv (gruppi & labels IT/EN)
-    Fornisce:
-      - filtro per tag (ANY-match)
-      - utility per mostrare i tag nella lingua corrente
-    """
     def __init__(self, data_dir: str = ".", donations_csv: str = "donations.csv",
                  universe_csv: str = "data/universe.csv", tag_catalog_csv: str = "data/tag_catalog.csv"):
         self.data_dir = data_dir
         self.donations_csv = os.path.join(self.data_dir, donations_csv)
-        self.universe_csv = os.path.join(self.data_dir, universe_csv) if not os.path.isabs(universe_csv) else universe_csv
-        self.tag_catalog_csv = os.path.join(self.data_dir, tag_catalog_csv) if not os.path.isabs(tag_catalog_csv) else tag_catalog_csv
+        self.universe_csv = os.path.join(self.data_dir, universe_csv)
+        self.tag_catalog_csv = os.path.join(self.data_dir, tag_catalog_csv)
         self._universe: Optional[pd.DataFrame] = None
         self._tags: Optional[pd.DataFrame] = None
         self.random = random.Random(2025)
 
     # ---------- Loaders ----------
-    def load_universe(self):
-        df = pd.read_csv("data/universe.csv")
-        df["Tags"] = df["Tags"].apply(eval)  # converte da stringa a lista
-        return df
-
+    def load_universe(self) -> pd.DataFrame:
+        if self._universe is None:
+            if not os.path.exists(self.universe_csv):
+                raise FileNotFoundError(f"Universe not found: {self.universe_csv}")
+            df = pd.read_csv(self.universe_csv)
+            for col in ["tags_keys", "tags_it", "tags_en"]:
+                if col not in df.columns:
+                    df[col] = ""
+            self._universe = df
+        return self._universe
 
     def load_tag_catalog(self) -> pd.DataFrame:
         if self._tags is not None:
@@ -109,11 +106,8 @@ class WeddingApp:
         if not os.path.exists(self.tag_catalog_csv):
             return pd.DataFrame(columns=["group_key","tag_key","label_it","label_en","emoji"])
         df = pd.read_csv(self.tag_catalog_csv)
-        for c in ["group_key","tag_key","label_it","label_en","emoji"]:
-            if c not in df.columns:
-                df[c] = ""
         self._tags = df
-        return self._tags
+        return df
 
     def refresh_from_disk(self) -> None:
         self._universe = None
@@ -132,11 +126,8 @@ class WeddingApp:
 
     # ---------- Display helpers ----------
     def display_tags(self, row: pd.Series, lang: str = "it") -> str:
-        if lang == "en":
-            s = row.get("tags_en", "")
-        else:
-            s = row.get("tags_it", "")
-        s = str(s or "").replace(";", ", ")
+        col = "tags_en" if lang == "en" else "tags_it"
+        s = str(row.get(col, "") or "").replace(";", ", ")
         return s
 
     # ---------- Gift code ----------
