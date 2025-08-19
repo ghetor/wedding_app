@@ -1,32 +1,27 @@
-# app.py
+# app.py (top of file)
 import streamlit as st
+st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
+
 import pandas as pd
 from c_wedding_app import WeddingApp, I18N
 
-# --- Hero image da Google Drive (ID dal tuo link) ---
+# --- Hero image da Google Drive ---
 HERO_URL = "https://drive.google.com/thumbnail?id=10zj4MWKuCwflsTNCa8hXSyEnsPB3_aul&sz=w1200"
-# In Drive: Condividi -> Chiunque abbia il link: Visualizzatore
 
 app = WeddingApp()
 
-st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
-
-st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
-
-# --- CSS per stile (checkbox + selectbox lingua compatto) ---
+# --- CSS globale (dopo set_page_config, prima di qualsiasi altro st.* che renderizza contenuti) ---
 st.markdown("""
 <style>
-/* restringe i selectbox (es. lingua) */
+/* Lingua compatta */
 div[data-baseweb="select"] { min-width: 70px !important; max-width: 70px !important; }
-div[data-testid="stSelectbox"] label { display:none !important; }  /* nasconde l'etichetta vuota */
-
-/* Step 1: checkbox più ariosi */
-div[data-testid="stCheckbox"] label p {
-  font-size: 0.98rem !important;
-}
+div[data-testid="stSelectbox"] label { display:none !important; }
+/* Checkbox più ariosi */
+div[data-testid="stCheckbox"] label p { font-size: 0.98rem !important; }
 div[data-testid="stCheckbox"] { margin: .35rem .25rem .35rem .1rem; }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
