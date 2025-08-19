@@ -2,7 +2,65 @@
 import streamlit as st
 import pandas as pd
 from c_wedding_app import WeddingApp, I18N
+import streamlit.components.v1 as components
 
+def animated_tag_selector(tag_catalog, lang="it"):
+    tags = []
+    for _, row in tag_catalog.iterrows():
+        label = row["label_en"] if lang == "en" else row["label_it"]
+        emoji = row["emoji"] if row["emoji"] not in [None, "?", "nan"] else "✨"
+        tags.append({"key": row["tag_key"], "label": f"{emoji} {label}"})
+
+    html = """
+    <style>
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      padding: 15px 25px;
+      background: #f0f8ff;
+      border: 2px solid #0077b6;
+      cursor: pointer;
+      user-select: none;
+      animation: float 10s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%   { transform: translateY(0px); }
+      50%  { transform: translateY(-30px); }
+      100% { transform: translateY(0px); }
+    }
+    .bubble.selected {
+      background: #90e0ef;
+      border-color: #03045e;
+      font-weight: bold;
+    }
+    </style>
+    <div id="bubble-container" style="position:relative; height:500px;">
+    """
+    import random
+    for t in tags:
+        x = random.randint(0, 80)
+        y = random.randint(0, 80)
+        html += f'<div class="bubble" style="left:{x}%;top:{y}%;" onclick="toggleBubble(this, \'{t["key"]}\')">{t["label"]}</div>'
+    html += """
+    </div>
+    <script>
+    const selected = new Set();
+    function toggleBubble(el, key) {
+      if (selected.has(key)) {
+        selected.delete(key);
+        el.classList.remove("selected");
+      } else {
+        selected.add(key);
+        el.classList.add("selected");
+      }
+      const q = new URLSearchParams(window.location.search);
+      q.set("selected_tags", Array.from(selected).join(","));
+      window.history.replaceState(null, "", "?" + q.toString());
+    }
+    </script>
+    """
+    components.html(html, height=600)
+#%%
 app = WeddingApp()
 
 st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered")
@@ -87,7 +145,15 @@ if st.session_state.step == 0:
 elif st.session_state.step == 1:
     st.header(T["profile_title"])
     tag_catalog = app.load_tag_catalog()
-    tag_selector(tag_catalog, lang=st.session_state.lang)
+    animated_tag_selector(tag_catalog, lang=st.session_state.lang)
+
+    # Leggiamo le scelte dai query params
+    qparams = st.experimental_get_query_params()
+    selected = set()
+    if "selected_tags" in qparams:
+        selected = set(qparams["selected_tags"][0].split(","))
+    st.session_state.selected_tags = selected
+
     st.button(T["to_suggestions"], on_click=lambda: goto(2), type="primary")
 
 # ---------- Step 2 Companies ----------
