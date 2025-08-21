@@ -63,9 +63,9 @@ if st.session_state.step == 0:
     st.header(T["welcome_title"])
     st.markdown(
         "👋 Benvenuti nel **Gioco degli Auguri**!\n\n"
-        "Set di argenteria? Grandi elettrodomestici? Valigie di ogni dimensione?"
-        "E se il tuo regalo crescesse nel tempo invece di rimanere in un armadio per gran parte del tempo?!\n"
-        "La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!"
+        "Set di argenteria? Grandi elettrodomestici? Valigie di ogni dimensione?\n\n"
+        "E se il tuo regalo crescesse nel tempo invece di rimanere in un armadio per gran parte del tempo?!\n\n"
+        "La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!\n"
         ".. in questo modo non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti!\n\n"
         "**Nessun rischio di sbagliare!** L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖\n\n"
         "### Come funziona\n"
