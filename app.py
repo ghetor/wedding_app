@@ -5,11 +5,10 @@ st.set_page_config(page_title="Wedding App", page_icon="💍", layout="centered"
 import pandas as pd
 from c_wedding_app import WeddingApp, I18N
 
-# --- Hero image da Google Drive ---
-#HERO_URL = "https://drive.google.com/thumbnail?id=10zj4MWKuCwflsTNCa8hXSyEnsPB3_aul&sz=w1200"
-# --- Video Google Drive (usa l'ID dal link "view")
+# --- Video Google Drive ---
 VIDEO_ID = "1qf1j6VvQkn8FApyN2V6yB8lEqs709ZkC"
-VIDEO_URL = f"https://drive.google.com/file/d/{VIDEO_ID}/preview"
+DRIVE_IFRAME = f"https://drive.google.com/file/d/{VIDEO_ID}/preview"
+DRIVE_DIRECT = f"https://drive.google.com/uc?export=download&id={VIDEO_ID}"
 
 # https://drive.google.com/file/d/1qf1j6VvQkn8FApyN2V6yB8lEqs709ZkC/view?usp=sharing
 app = WeddingApp()
@@ -64,23 +63,25 @@ if st.session_state.step == 0:
     st.header(T["welcome_title"])
     st.markdown(
         "👋 Benvenuti nel **Gioco degli Auguri**!\n\n"
-        "Ti piacerebbe che il tuo regalo crescesse nel tempo? Investiamolo!\n"
-        "L'idea è trasformare il tuo regalo in un carrello **simbolico** di brand famosi su cui investire. "
-        "Così non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti.\n\n"
+        "Set di argenteria? Grandi elettrodomestici? Valigie di ogni dimensione?"
+        "E se il tuo regalo crescesse nel tempo invece di rimanere in un armadio per gran parte del tempo?!\n"
+        "La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!"
+        ".. in questo modo non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti!\n\n"
         "**Nessun rischio di sbagliare!** L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖\n\n"
         "### Come funziona\n"
-        "1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *AI*…)\n"
-        "2) Aggiungi al carrello le aziende che preferisci\n"
-        "3) Dividi l'importo del tuo regalo fra le aziende scelte\n"
-        "4) Genera il **Codice del Regalo** e inseriscilo nella causale del bonifico (così decodifichiamo subito i tuoi auguri)\n"
+        "1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *Intelligenza Artificiale*…)\n"
+        "2) Aggiungi al carrello le aziende che vuoi regalare agli sposi\n"
+        "3) Dividi l'importo del tuo regalo fra le aziende che hai scelto\n"
+        "4) Genera il **Codice del Regalo** e inseriscilo nella causale del bonifico\n"
+        "   **Ricorda** il codice è l'unico modo che abbiamo per decodificare il tuo regalo!\n"
     )
 
-    # --- VIDEO: embed Google Drive player (streaming) ---
+    # --- VIDEO: player Drive (iframe integrato) ---
     st.components.v1.html(
         f"""
         <div style="position:relative;padding-top:56.25%;margin:16px 0;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
           <iframe
-            src="{VIDEO_URL}"
+            src="{DRIVE_IFRAME}"
             allow="autoplay; encrypted-media"
             allowfullscreen
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
@@ -89,9 +90,21 @@ if st.session_state.step == 0:
         """,
         height=420,
     )
-
-    # (opzionale) immagine di contorno sotto il video
-#    st.image(HERO_URL, use_column_width=True, caption="Un pizzico di ispirazione ✨")
+    
+    # --- VIDEO: fallback HTML5 (se l’iframe non parte) ---
+    with st.expander("🎥 Se il video non parte, prova questo player alternativo"):
+        st.markdown(
+            f"""
+            <video controls playsinline style="width:100%;border-radius:12px;outline:none;">
+              <source src="{DRIVE_DIRECT}" type="video/mp4">
+              Il tuo browser non supporta la riproduzione del video.
+            </video>
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    # Link esterno come ultima spiaggia
+    st.markdown(f"[📺 Apri il video in una nuova scheda]({DRIVE_IFRAME})")
 
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
 
