@@ -18,7 +18,7 @@ import pandas as pd
 I18N = {
     "it": {
         "app_title": "Gioco degli Auguri",
-        "welcome_title": "Benvenuto! 🎉",
+        "welcome_title": "Benvenuti! 🎉👋",
         "welcome_sub": "Trasforma il tuo regalo in simboli di buon augurio e fa si che cresca col tempo!\nNiente investimenti reali, promesso!",
         "start_quiz": "Inizia",
         "profile_title": "Step 1 • Scegli i temi",
