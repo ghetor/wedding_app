@@ -66,7 +66,7 @@ if st.session_state.step == 0:
         "E se il tuo regalo crescesse nel tempo invece di rimanere chiuso in un armadio per gran parte dell'anno?!\n\n"
         "La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!\n"
         ".. in questo modo non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti!\n\n"
-                                "**Nessun rischio di sbagliare!**"
+                                "**Nessun rischio di sbagliare!**\n\n"
         "L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖\n\n"
         "### Come funziona\n"
         "1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *Intelligenza Artificiale*…)\n"
