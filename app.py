@@ -6,8 +6,12 @@ import pandas as pd
 from c_wedding_app import WeddingApp, I18N
 
 # --- Hero image da Google Drive ---
-HERO_URL = "https://drive.google.com/thumbnail?id=10zj4MWKuCwflsTNCa8hXSyEnsPB3_aul&sz=w1200"
+#HERO_URL = "https://drive.google.com/thumbnail?id=10zj4MWKuCwflsTNCa8hXSyEnsPB3_aul&sz=w1200"
+# --- Video Google Drive (usa l'ID dal link "view")
+VIDEO_ID = "1qf1j6VvQkn8FApyN2V6yB8lEqs709ZkC"
+VIDEO_URL = f"https://drive.google.com/file/d/{VIDEO_ID}/preview"
 
+# https://drive.google.com/file/d/1qf1j6VvQkn8FApyN2V6yB8lEqs709ZkC/view?usp=sharing
 app = WeddingApp()
 
 # --- CSS globale (dopo set_page_config, prima di qualsiasi altro st.* che renderizza contenuti) ---
@@ -59,13 +63,36 @@ st.divider()
 if st.session_state.step == 0:
     st.header(T["welcome_title"])
     st.markdown(
-        "👋 Benvenutə nel **Gioco degli Auguri**!\n\n"
-        "Trasforma il tuo regalo in un carrello **simbolico** di brand famosi: "
-        "nessuna finanza vera, è solo un gioco per rendere il pensiero più divertente 💖\n\n"
-        "Scegli i temi che ti ispirano, seleziona qualche azienda che li rappresenta "
-        "e alla fine genera un **codice regalo** da usare nella causale del bonifico."
+        "👋 Benvenuti nel **Gioco degli Auguri**!\n\n"
+        "Ti piacerebbe che il tuo regalo crescesse nel tempo? Investiamolo!\n"
+        "L'idea è trasformare il tuo regalo in un carrello **simbolico** di brand famosi su cui investire. "
+        "Così non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti.\n\n"
+        "**Nessun rischio di sbagliare!** L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖\n\n"
+        "### Come funziona\n"
+        "1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *AI*…)\n"
+        "2) Aggiungi al carrello le aziende che preferisci\n"
+        "3) Dividi l'importo del tuo regalo fra le aziende scelte\n"
+        "4) Genera il **Codice del Regalo** e inseriscilo nella causale del bonifico (così decodifichiamo subito i tuoi auguri)\n"
     )
-    st.image(HERO_URL, use_column_width=True, caption="Un pizzico di ispirazione ✨")
+
+    # --- VIDEO: embed Google Drive player (streaming) ---
+    st.components.v1.html(
+        f"""
+        <div style="position:relative;padding-top:56.25%;margin:16px 0;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+          <iframe
+            src="{VIDEO_URL}"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+          ></iframe>
+        </div>
+        """,
+        height=420,
+    )
+
+    # (opzionale) immagine di contorno sotto il video
+#    st.image(HERO_URL, use_column_width=True, caption="Un pizzico di ispirazione ✨")
+
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
 
 # ---------- Step 1 • Scegli i temi (curated & friendly) ----------
