@@ -61,31 +61,7 @@ st.divider()
 # ---------- Step 0 Welcome ----------
 if st.session_state.step == 0:
     st.header(T["welcome_title"])
-    st.markdown(
-        "Set di argenteria? 🍴  Grandi elettrodomestici? 🧺  Valigie di ogni dimensione? 🧳\n\n"
-        "E se il tuo regalo crescesse nel tempo invece di rimanere chiuso in un armadio per gran parte dell'anno?!\n\n"
-        "La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!\n"
-        ".. in questo modo non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti!\n\n",
-    )
-
-    st.markdown(
-        """
-        <div style='text-align: center; font-weight: bold; font-size: 1.2rem; margin: 1em 0;'>
-            🚫 Nessun rischio di sbagliare! 🚫
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        "L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖\n\n"
-        "### Come funziona\n"
-        "1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *Intelligenza Artificiale*…)\n"
-        "2) Aggiungi al carrello le aziende che vuoi regalare agli sposi\n"
-        "3) Dividi l'importo del tuo regalo fra le aziende che hai scelto\n"
-        "4) Genera il **Codice del Regalo** e inseriscilo nella causale del bonifico\n\n"
-        "   **Ricorda** il codice è l'unico modo che abbiamo per decodificare il tuo regalo!\n"
-    )
+    st.markdown(T["welcome_text"], unsafe_allow_html=True)
 
     # --- VIDEO: player Drive (iframe integrato) ---
     st.components.v1.html(
@@ -102,22 +78,23 @@ if st.session_state.step == 0:
         height=420,
     )
     
-    # --- VIDEO: fallback HTML5 (se l’iframe non parte) ---
-    with st.expander("🎥 Se il video non parte, prova questo player alternativo"):
+    # --- VIDEO: fallback HTML5 ---
+    with st.expander("🎥 Se il video non parte / If the video doesn’t start"):
         st.markdown(
             f"""
             <video controls playsinline style="width:100%;border-radius:12px;outline:none;">
               <source src="{DRIVE_DIRECT}" type="video/mp4">
-              Il tuo browser non supporta la riproduzione del video.
+              Your browser does not support video playback.
             </video>
             """,
             unsafe_allow_html=True,
         )
     
-    # Link esterno come ultima spiaggia
-    st.markdown(f"[📺 Apri il video in una nuova scheda]({DRIVE_IFRAME})")
+    # Link esterno
+    st.markdown(f"[📺 Apri il video in una nuova scheda / Open video in new tab]({DRIVE_IFRAME})")
 
     st.button(T["start_quiz"], on_click=lambda: goto(1), type="primary")
+
 
 # ---------- Step 1 • Scegli i temi (curated & friendly) ----------
 elif st.session_state.step == 1:

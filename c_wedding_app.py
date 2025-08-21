@@ -17,62 +17,74 @@ import pandas as pd
 # -------------------------
 I18N = {
     "it": {
-        "app_title": "Gioco degli Auguri",
+        "app_title": "L'investitore intelligente!",
         "welcome_title": "Benvenuti! 🎉👋",
-        "welcome_sub": "Trasforma il tuo regalo in simboli di buon augurio e fa si che cresca col tempo!\nNiente investimenti reali, promesso!",
+        "welcome_text": """
+Set di argenteria? 🍴  Grandi elettrodomestici? 🧺  Valigie di ogni dimensione? 🧳
+
+E se il tuo regalo crescesse nel tempo invece di rimanere chiuso in un armadio per gran parte dell'anno?!
+
+La nostra idea è far si che tu possa trasformare il tuo regalo in un carrello **simbolico** di società famose su cui investire!  
+.. in questo modo non solo rimarrà un regalo indimenticabile per gli sposi, ma li farà pensare a te ogni volta che guarderanno i loro investimenti!
+
+<div style='text-align: center; font-weight: bold; font-size: 1.2rem; margin: 1em 0;'>🚫 Nessun rischio di sbagliare! 🚫</div>
+
+<div style='
+    font-family: "Georgia", serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: #c2185b;
+    margin: 1em 0;
+'>
+    L'acquisto vero e proprio lo faranno gli sposi: questo è solo un gioco per rendere il pensiero più divertente 💖
+</div>
+
+### Come funziona
+1) Seleziona i temi che ti ispirano (es. *Cura degli animali*, *Viaggi*, *Intelligenza Artificiale*…)  
+2) Aggiungi al carrello le aziende che vuoi regalare agli sposi  
+3) Dividi l'importo del tuo regalo fra le aziende che hai scelto  
+4) Genera il **Codice del Regalo** e inseriscilo nella causale del bonifico  
+
+**Ricorda**: il codice è l'unico modo che abbiamo per decodificare il tuo regalo!
+""",
         "start_quiz": "Inizia",
-        "profile_title": "Step 1 • Scegli i temi",
-        "to_suggestions": "Vedi aziende suggerite",
-        "suggestions_title": "Step 2 • Seleziona le aziende",
-        "suggestions_sub": "Spunta i simboli che vuoi regalare (puoi anche cercare).",
-        "search_placeholder": "Cerca un’azienda (es. Disney, Ferrari)…",
-        "to_amounts": "Conferma selezioni",
-        "amounts_title": "Step 3 • \"Investi\" il tuo regalo",
-        "amounts_sub": "Assegna un importo a ciascun simbolo scelto 😉",
-        "total": "Totale",
-        "instructions_safe": "Non stai comprando azioni vere: è solo un gioco simbolico 🎁. Il regalo vero è il bonifico.",
-        "generate_code": "Genera codice regalo",
-        "your_code": "Il tuo codice da mettere nella causale:",
-        "copy_hint": "Copia e incolla questo codice nella causale del bonifico.",
-        "stats_title": "Statistiche simpatiche",
-        "top_brands": "Brand più scelti",
-        "total_symbols": "Totale simboli regalati",
-        "reset": "Azzera selezioni",
-        "lang_label": "Lingua",
-        "step": "Step",
-        "back": "Indietro",
-        "forward": "Avanti",
-        "tags_title": "Scegli i temi (puoi aprire i gruppi e selezionare più tag)",
+ 
     },
     "en": {
-        "app_title": "Good Wishes Game",
-        "welcome_title": "Welcome! 🎉",
-        "welcome_sub": "Turn your gift into symbolic good-luck tokens (no real finance, promise!)",
+        "app_title": "The intelligent investor!",
+        "welcome_title": "Welcome! 🎉👋",
+        "welcome_text": """
+Silverware set? 🍴  Large appliances? 🧺  Luggage of all sizes? 🧳
+
+What if your gift could grow over time instead of staying locked in a closet for most of the year?!
+
+Our idea is to let you transform your gift into a **symbolic** basket of famous companies to invest in!  
+.. this way it won’t just be an unforgettable gift for the couple, but it will remind them of you every time they look at their investments!
+
+<div style='text-align: center; font-weight: bold; font-size: 1.2rem; margin: 1em 0;'>🚫 No risk of getting it wrong! 🚫</div>
+
+<div style='
+    font-family: "Georgia", serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: #c2185b;
+    margin: 1em 0;
+'>
+    The couple will make the real purchase: this is just a game to make your thought more fun 💖
+</div>
+
+### How it works
+1) Pick the themes that inspire you (e.g. *Pets*, *Travel*, *Artificial Intelligence*…)  
+2) Add the companies you want to gift the couple  
+3) Split your gift amount among the chosen companies  
+4) Generate the **Gift Code** and put it in the bank transfer note  
+
+**Remember**: the code is the only way for us to decode your gift!
+""",
         "start_quiz": "Start",
-        "profile_title": "Step 1 • Pick your themes",
-        "to_suggestions": "See suggested companies",
-        "suggestions_title": "Step 2 • Pick companies",
-        "suggestions_sub": "Tick the tokens you want to gift (you can also search).",
-        "search_placeholder": "Search a company (e.g., Disney, Ferrari)…",
-        "to_amounts": "Confirm selections",
-        "amounts_title": "Step 3 • Amounts",
-        "amounts_sub": "Set an amount for each chosen token. This is just symbolic 😉",
-        "total": "Total",
-        "instructions_safe": "You’re NOT buying real stocks: it’s a symbolic game 🎁. The real gift is the bank transfer.",
-        "generate_code": "Generate gift code",
-        "your_code": "Your code to put in the bank transfer note:",
-        "copy_hint": "Copy & paste this code into your bank transfer note.",
-        "stats_title": "Fun stats",
-        "top_brands": "Most-picked brands",
-        "total_symbols": "Total tokens gifted",
-        "reset": "Reset selections",
-        "lang_label": "Language",
-        "step": "Step",
-        "back": "Back",
-        "forward": "Next",
-        "tags_title": "Pick the themes you like (open groups and select multiple tags)",
     },
 }
+
 
 # -------------------------
 # Classe core
